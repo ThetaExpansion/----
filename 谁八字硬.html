@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -6,7 +5,7 @@
     <title>名字陀螺大战</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
     <style>
-        /* 极简主义，Anthropic 风格 UI */
+        /* 极简主义 UI */
         :root {
             --bg-color: #F9F8F6;
             --text-color: #1a1a19;
@@ -26,267 +25,398 @@
             height: 100vh;
             overflow: hidden;
         }
-        header {
-            margin-top: 30px;
-            text-align: center;
-        }
+
         h1 {
             font-weight: normal;
             letter-spacing: 2px;
-            margin-bottom: 10px;
             font-size: 2rem;
+            margin-bottom: 5px;
         }
-        .controls {
+
+        /* --- 页面容器切换逻辑 --- */
+        #page-input, #page-battle {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            height: 100%;
+        }
+        /* 初始隐藏战斗页面 */
+        #page-battle {
+            display: none; 
+            padding-top: 20px;
+        }
+
+        /* --- 界面 1：输入页面样式 --- */
+        #page-input {
+            justify-content: center;
+            margin-top: -10vh;
+        }
+        .input-card {
+            background: white;
+            padding: 40px;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+            text-align: center;
+        }
+        .input-group {
             display: flex;
             gap: 20px;
             align-items: center;
-            margin-bottom: 20px;
-            padding: 20px;
-            background: white;
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
-            z-index: 10;
+            margin: 30px 0;
         }
         input {
             font-family: inherit;
-            font-size: 1.1rem;
-            padding: 10px;
-            width: 120px;
+            font-size: 1.2rem;
+            padding: 12px;
+            width: 140px;
             text-align: center;
             border: 1px solid var(--border-color);
-            border-radius: 4px;
+            border-radius: 6px;
             background-color: var(--bg-color);
             transition: outline 0.2s;
         }
-        input:focus {
-            outline: 1px solid var(--text-color);
-        }
+        input:focus { outline: 2px solid var(--text-color); }
         input.red-input { color: var(--red-team); }
         input.blue-input { color: var(--blue-team); }
         
         button {
             font-family: inherit;
             font-size: 1.1rem;
-            padding: 10px 24px;
+            padding: 12px 30px;
             background-color: var(--text-color);
             color: var(--bg-color);
             border: none;
-            border-radius: 4px;
+            border-radius: 6px;
             cursor: pointer;
             transition: background 0.2s;
         }
         button:hover { background-color: #333; }
         button:disabled { background-color: var(--border-color); cursor: not-allowed; }
 
-        #message {
-            height: 24px;
-            font-size: 1.1rem;
+        .error-msg {
             color: #d94a38;
-            margin-bottom: 10px;
+            height: 20px;
+            margin-top: 10px;
         }
 
-        #scoreboard {
-            font-size: 1.2rem;
-            margin-bottom: 15px;
-            display: none;
+        /* --- 界面 2：战斗页面样式 --- */
+        .battle-header {
+            width: 800px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: white;
+            padding: 15px 30px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+            margin-bottom: 20px;
+            z-index: 10;
+        }
+
+        .team-roster {
+            display: flex;
+            gap: 10px;
+            font-size: 1.5rem;
             font-weight: bold;
         }
+        
+        .char-box {
+            position: relative;
+            padding: 5px 10px;
+            border-radius: 4px;
+            color: #ccc; /* 未出战或已战败的字变灰 */
+            transition: color 0.3s;
+        }
 
-        /* 画布区域：模拟盆地 */
+        /* 红方和蓝方的激活状态 */
+        .char-box.red-active { color: var(--red-team); }
+        .char-box.blue-active { color: var(--blue-team); }
+
+        /* 底部红点指示器 */
+        .char-box::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background-color: transparent;
+        }
+        .char-box.red-active::after { background-color: var(--red-team); }
+        .char-box.blue-active::after { background-color: var(--blue-team); }
+
+        .score-board {
+            font-size: 1.5rem;
+            font-weight: bold;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+
+        /* 盆地视角 */
+        #view-wrapper {
+            perspective: 1200px;
+            margin-top: 20px; 
+        }
         #game-container {
             position: relative;
             width: 600px;
             height: 600px;
             border-radius: 50%;
-            box-shadow: inset 0 20px 50px rgba(0,0,0,0.1), 0 10px 30px rgba(0,0,0,0.05);
+            box-shadow: inset 0 30px 60px rgba(0,0,0,0.15), 0 20px 40px rgba(0,0,0,0.08);
             background: radial-gradient(circle at center, #d8d6cd 0%, #edece8 100%);
+            transform: rotateX(55deg);
+            transform-style: preserve-3d;
         }
-        canvas {
-            border-radius: 50%;
+        canvas { border-radius: 50%; }
+
+        .battle-controls {
+            margin-top: -30px;
+            display: flex;
+            gap: 20px;
+            z-index: 10;
         }
     </style>
 </head>
 <body>
 
-    <header>
-        <h1>名字陀螺大战</h1>
-        <div id="message">请输入纯汉字对战</div>
-    </header>
-
-    <div class="controls" id="control-panel">
-        <input type="text" id="red-name" class="red-input" placeholder="红方 (2-5字)">
-        <span style="font-style: italic; color: #888;">VS</span>
-        <input type="text" id="blue-name" class="blue-input" placeholder="蓝方 (2-5字)">
-        <button id="action-btn">初始化对决</button>
+    <div id="page-input">
+        <div class="input-card">
+            <h1>名字陀螺大战</h1>
+            <p style="color: #666; margin-bottom: 20px;">请输入纯汉字对战，双方字数必须相等</p>
+            
+            <div class="input-group">
+                <input type="text" id="red-name" class="red-input" placeholder="红方 (2-5字)">
+                <span style="font-style: italic; color: #888; font-weight:bold;">VS</span>
+                <input type="text" id="blue-name" class="blue-input" placeholder="蓝方 (2-5字)">
+            </div>
+            
+            <button id="btn-goto-battle">生成战场</button>
+            <div id="input-error" class="error-msg"></div>
+        </div>
     </div>
 
-    <div id="scoreboard">
-        红方 <span id="score-red" style="color:var(--red-team)">0</span> : 
-        <span id="score-blue" style="color:var(--blue-team)">0</span> 蓝方 
-        <span id="round-info" style="font-weight:normal; margin-left:15px; font-size:1rem; color:#666;"></span>
-    </div>
+    <div id="page-battle">
+        
+        <div class="battle-header">
+            <div id="roster-red" class="team-roster">
+                </div>
+            
+            <div class="score-board">
+                <div>
+                    <span id="score-red" style="color:var(--red-team)">0</span>
+                    <span style="color:#888; margin: 0 10px;">:</span>
+                    <span id="score-blue" style="color:var(--blue-team)">0</span>
+                </div>
+                <div id="battle-status" style="font-size: 1rem; color: #666; font-weight: normal;">等待开战...</div>
+            </div>
 
-    <div id="game-container"></div>
+            <div id="roster-blue" class="team-roster">
+                </div>
+        </div>
+
+        <div id="view-wrapper">
+            <div id="game-container"></div>
+        </div>
+
+        <div class="battle-controls">
+            <button id="btn-next-round">开始回合</button>
+            <button id="btn-back-input" style="background-color: #888;">返回修改名字</button>
+        </div>
+
+    </div>
 
 <script>
-    // 物理引擎模块提取
+    // --- 物理引擎 ---
     const Engine = Matter.Engine,
           Render = Matter.Render,
           Runner = Matter.Runner,
           Bodies = Matter.Bodies,
           Composite = Matter.Composite,
           Events = Matter.Events,
-          Body = Matter.Body,
-          Vector = Matter.Vector;
+          Body = Matter.Body;
 
-    // 游戏状态
+    // --- 游戏状态变量 ---
     let engine, render, runner;
     let redName = '', blueName = '';
     let currentRound = 0;
     let score = { red: 0, blue: 0 };
-    let gameState = 'IDLE'; // IDLE, PLAYING, ROUND_OVER, GAME_OVER
+    let gameState = 'IDLE'; 
     let activeBodies = [];
     let sparks = [];
 
-    const width = 600;
-    const height = 600;
-    const cx = width / 2;
-    const cy = height / 2;
-    const radius = 290;
-
-    const actionBtn = document.getElementById('action-btn');
-    const msgEl = document.getElementById('message');
+    // --- DOM 元素获取 ---
+    const pageInput = document.getElementById('page-input');
+    const pageBattle = document.getElementById('page-battle');
+    const errorMsg = document.getElementById('input-error');
     const redInput = document.getElementById('red-name');
     const blueInput = document.getElementById('blue-name');
-    const scoreboard = document.getElementById('scoreboard');
+    
+    const rosterRed = document.getElementById('roster-red');
+    const rosterBlue = document.getElementById('roster-blue');
+    const scoreRedEl = document.getElementById('score-red');
+    const scoreBlueEl = document.getElementById('score-blue');
+    const statusEl = document.getElementById('battle-status');
+    
+    const btnGotoBattle = document.getElementById('btn-goto-battle');
+    const btnNextRound = document.getElementById('btn-next-round');
+    const btnBackInput = document.getElementById('btn-back-input');
+    const gameContainer = document.getElementById('game-container');
 
-    // 验证纯汉字
-    function isChinese(str) {
-        return /^[\u4e00-\u9fa5]+$/.test(str);
-    }
+    const width = 600, height = 600, cx = width/2, cy = height/2, radius = 290;
 
-    actionBtn.addEventListener('click', () => {
-        if (gameState === 'IDLE') {
-            startGame();
-        } else if (gameState === 'ROUND_OVER') {
-            startNextRound();
-        } else if (gameState === 'GAME_OVER') {
-            resetGame();
-        }
-    });
+    // --- 验证逻辑 ---
+    function isChinese(str) { return /^[\u4e00-\u9fa5]+$/.test(str); }
 
-    function showMessage(msg, isError = false) {
-        msgEl.textContent = msg;
-        msgEl.style.color = isError ? '#d94a38' : '#1a1a19';
-    }
-
-    function startGame() {
+    // --- 页面 1：点击“生成战场” ---
+    btnGotoBattle.addEventListener('click', () => {
         const rName = redInput.value.trim();
         const bName = blueInput.value.trim();
 
         if (rName.length < 2 || rName.length > 5 || bName.length < 2 || bName.length > 5) {
-            showMessage('犯规：字数必须在 2 到 5 个字符之间！', true);
-            return;
+            errorMsg.textContent = '犯规：字数必须在 2 到 5 个字符之间！'; return;
         }
         if (!isChinese(rName) || !isChinese(bName)) {
-            showMessage('犯规：必须输入纯汉字！', true);
-            return;
+            errorMsg.textContent = '犯规：必须输入纯汉字！'; return;
         }
         if (rName.length !== bName.length) {
-            showMessage(`犯规：双方字数必须对等！(红方${rName.length}字，蓝方${bName.length}字)`, true);
-            return;
+            errorMsg.textContent = `犯规：双方字数必须对等！(红${rName.length}，蓝${bName.length})`; return;
         }
 
+        // 数据记录，清空错误
         redName = rName;
         blueName = bName;
+        errorMsg.textContent = '';
         currentRound = 0;
         score = { red: 0, blue: 0 };
-        
-        redInput.disabled = true;
-        blueInput.disabled = true;
-        scoreboard.style.display = 'block';
-        updateScoreboard();
 
+        // 切换页面显示
+        pageInput.style.display = 'none';
+        pageBattle.style.display = 'flex';
+
+        // 初始化战斗界面
+        buildRosterUI();
+        updateScoreboard();
+        statusEl.textContent = '准备就绪';
+        btnNextRound.textContent = '开始第 1 回合';
+        btnNextRound.style.display = 'block';
+        
         initPhysics();
-        startNextRound();
-    }
+        gameState = 'ROUND_OVER'; // 允许点击“开始回合”
+    });
 
-    function startNextRound() {
-        if (currentRound >= redName.length) {
-            // 游戏结束结算
-            gameState = 'GAME_OVER';
-            let winner = score.red > score.blue ? '红方获胜！' : (score.blue > score.red ? '蓝方获胜！' : '平局！');
-            showMessage(`比赛结束，${winner}`);
-            actionBtn.textContent = '重新开始';
-            return;
-        }
-
-        gameState = 'PLAYING';
-        actionBtn.disabled = true;
-        let rChar = redName[currentRound];
-        let bChar = blueName[currentRound];
-        showMessage(`第 ${currentRound + 1} 回合：【${rChar}】 VS 【${bChar}】`);
-        
-        spawnTops(rChar, bChar);
-        currentRound++;
-        updateScoreboard();
-    }
-
-    function resetGame() {
-        redInput.disabled = false;
-        blueInput.disabled = false;
-        scoreboard.style.display = 'none';
-        actionBtn.textContent = '初始化对决';
-        msgEl.textContent = '请输入纯汉字对战';
-        gameState = 'IDLE';
+    // --- 页面 2：点击“返回修改名字” ---
+    btnBackInput.addEventListener('click', () => {
+        // 彻底停止并清理物理引擎，释放内存
         if(engine) {
             Render.stop(render);
             Runner.stop(runner);
             engine.events = {};
-            document.getElementById('game-container').innerHTML = '';
+            gameContainer.innerHTML = '';
+        }
+        // 切回输入页面
+        pageBattle.style.display = 'none';
+        pageInput.style.display = 'flex';
+    });
+
+    // --- 页面 2：点击“开始回合/下一回合” ---
+    btnNextRound.addEventListener('click', () => {
+        if (gameState === 'ROUND_OVER') {
+            startNextRound();
+        }
+    });
+
+    // --- 渲染顶部出战字体列表 ---
+    function buildRosterUI() {
+        rosterRed.innerHTML = '';
+        rosterBlue.innerHTML = '';
+        for(let i=0; i<redName.length; i++) {
+            rosterRed.innerHTML += `<span id="r-char-${i}" class="char-box">${redName[i]}</span>`;
+            rosterBlue.innerHTML += `<span id="b-char-${i}" class="char-box">${blueName[i]}</span>`;
+        }
+    }
+
+    // --- 更新字体下方的红点和激活状态 ---
+    function updateRosterHighlight() {
+        // 先清理所有的激活状态
+        for(let i=0; i<redName.length; i++) {
+            document.getElementById(`r-char-${i}`).className = 'char-box';
+            document.getElementById(`b-char-${i}`).className = 'char-box';
+        }
+        // 点亮当前回合的字体
+        if (currentRound < redName.length) {
+            document.getElementById(`r-char-${currentRound}`).classList.add('red-active');
+            document.getElementById(`b-char-${currentRound}`).classList.add('blue-active');
         }
     }
 
     function updateScoreboard() {
-        document.getElementById('score-red').textContent = score.red;
-        document.getElementById('score-blue').textContent = score.blue;
-        document.getElementById('round-info').textContent = `(当前进度: ${currentRound}/${redName.length})`;
+        scoreRedEl.textContent = score.red;
+        scoreBlueEl.textContent = score.blue;
     }
 
+    // --- 核心战斗逻辑 ---
+    function startNextRound() {
+        if (currentRound >= redName.length) {
+            // 游戏结束
+            gameState = 'GAME_OVER';
+            let winner = score.red > score.blue ? '红方获胜！' : (score.blue > score.red ? '蓝方获胜！' : '平局！');
+            statusEl.textContent = `比赛结束，${winner}`;
+            btnNextRound.style.display = 'none'; // 隐藏开始按钮
+            return;
+        }
+
+        gameState = 'PLAYING';
+        btnNextRound.disabled = true;
+        
+        let rChar = redName[currentRound];
+        let bChar = blueName[currentRound];
+        statusEl.textContent = `第 ${currentRound + 1} 回合战斗中...`;
+        
+        updateRosterHighlight(); // 刷新红点标记
+        spawnTops(rChar, bChar);
+        
+        currentRound++;
+    }
+
+    // --- 物理引擎初始化 (保留之前的逻辑) ---
     function initPhysics() {
         engine = Engine.create({ gravity: { x: 0, y: 0 } });
         
         render = Render.create({
-            element: document.getElementById('game-container'),
+            element: gameContainer,
             engine: engine,
             options: {
                 width: width,
                 height: height,
                 wireframes: false,
-                background: 'transparent' // 透明以显示CSS盆地背景
+                background: 'transparent'
             }
         });
 
-        // 创建环形边界 (防止飞出盆地)
+        // 环形边界
         const parts = [];
         for (let i = 0; i < 36; i++) {
             const angle = (i / 36) * Math.PI * 2;
-            const x = cx + Math.cos(angle) * radius;
-            const y = cy + Math.sin(angle) * radius;
-            parts.push(Bodies.rectangle(x, y, 60, 20, {
-                isStatic: true,
-                angle: angle,
-                render: { visible: false } // 隐藏边界
-            }));
+            parts.push(Bodies.rectangle(
+                cx + Math.cos(angle) * radius, 
+                cy + Math.sin(angle) * radius, 
+                60, 20, 
+                { isStatic: true, angle: angle, render: { visible: false } }
+            ));
         }
         Composite.add(engine.world, parts);
 
-        // 自定义渲染循环：绘制3D汉字实体和火花
+        // 自定义渲染循环：3D汉字与火花
         Events.on(render, 'afterRender', function() {
             const ctx = render.context;
             
-            // 绘制陀螺
             activeBodies.forEach(body => {
                 if (!body.isActiveTop) return;
                 
@@ -294,7 +424,6 @@
                 ctx.translate(body.position.x, body.position.y);
                 ctx.rotate(body.angle);
                 
-                // 根据角速度产生轻微的抖动/倾斜视觉效果
                 const speed = Math.abs(body.angularVelocity);
                 if(speed > 0.1) {
                     ctx.transform(1, 0, speed * 0.5 * Math.sin(engine.timing.timestamp * 0.01), 1, 0, 0);
@@ -304,31 +433,20 @@
                 ctx.textAlign = "center";
                 ctx.textBaseline = "middle";
 
-                // 实体厚度（3D效果）
                 ctx.fillStyle = body.customStyle.depthColor;
-                for(let i = 1; i <= 6; i++) {
-                    ctx.fillText(body.customStyle.char, -i, i);
-                }
+                for(let i = 1; i <= 6; i++) { ctx.fillText(body.customStyle.char, -i, i); }
                 
-                // 实体表面
                 ctx.fillStyle = body.customStyle.faceColor;
                 ctx.fillText(body.customStyle.char, 0, 0);
 
-                // 裂纹效果 (如果转速过低模拟受损)
                 if (speed < 0.1 && speed > 0.01) {
                     ctx.beginPath();
-                    ctx.moveTo(0, -10);
-                    ctx.lineTo(5, 5);
-                    ctx.lineTo(-10, 15);
-                    ctx.strokeStyle = '#fff';
-                    ctx.lineWidth = 1;
-                    ctx.stroke();
+                    ctx.moveTo(0, -10); ctx.lineTo(5, 5); ctx.lineTo(-10, 15);
+                    ctx.strokeStyle = '#fff'; ctx.lineWidth = 1; ctx.stroke();
                 }
-                
                 ctx.restore();
             });
 
-            // 绘制火花特效
             for (let i = sparks.length - 1; i >= 0; i--) {
                 let p = sparks[i];
                 ctx.globalAlpha = p.life;
@@ -337,16 +455,13 @@
                 ctx.arc(p.x, p.y, p.size, 0, 2 * Math.PI);
                 ctx.fill();
                 
-                // 更新火花状态
-                p.x += p.vx;
-                p.y += p.vy;
-                p.life -= 0.05;
+                p.x += p.vx; p.y += p.vy; p.life -= 0.05;
                 if (p.life <= 0) sparks.splice(i, 1);
             }
             ctx.globalAlpha = 1.0;
         });
 
-        // 物理更新前：施加向心引力（盆地效果）与转速衰减
+        // 物理逻辑：盆地引力、摩擦与胜负判定
         Events.on(engine, 'beforeUpdate', function() {
             if (gameState !== 'PLAYING') return;
 
@@ -356,68 +471,63 @@
             activeBodies.forEach(body => {
                 if (!body.isActiveTop) return;
 
-                // 盆地引力：向中心滑动
                 let dx = cx - body.position.x;
                 let dy = cy - body.position.y;
                 let dist = Math.sqrt(dx*dx + dy*dy);
                 if (dist > 20) {
-                    let force = 0.00003 * body.mass; // 引力系数
+                    let force = 0.00003 * body.mass;
                     Body.applyForce(body, body.position, {x: (dx/dist)*force, y: (dy/dist)*force});
                 }
 
-                // 模拟空气与底部摩擦，缓慢降低转速
                 Body.setAngularVelocity(body, body.angularVelocity * 0.998);
 
                 const speed = Math.abs(body.angularVelocity);
-                
-                // 判定是否停下
                 if (speed < 0.02) {
-                    body.isActiveTop = false; // 倒下
-                    body.render.opacity = 0.5; // 变暗
+                    body.isActiveTop = false; 
+                    body.render.opacity = 0.5; 
                 } else {
                     aliveCount++;
                     lastAlive = body.customStyle.team;
                 }
             });
 
-            // 胜负判定
             if (activeBodies.length === 2 && aliveCount <= 1) {
                 gameState = 'ROUND_OVER';
-                actionBtn.disabled = false;
-                actionBtn.textContent = '下一回合';
+                btnNextRound.disabled = false;
+                
+                if (currentRound >= redName.length) {
+                    btnNextRound.textContent = '查看最终结算';
+                } else {
+                    btnNextRound.textContent = `开始第 ${currentRound + 1} 回合`;
+                }
 
                 if (aliveCount === 1) {
                     if (lastAlive === 'red') {
                         score.red++;
-                        showMessage('本回合结果：红方【胜】！');
+                        statusEl.textContent = `本回合结果：红方【胜】`;
                     } else {
                         score.blue++;
-                        showMessage('本回合结果：蓝方【胜】！');
+                        statusEl.textContent = `本回合结果：蓝方【胜】`;
                     }
                 } else {
-                    showMessage('本回合结果：同归于尽，平局！');
+                    statusEl.textContent = `本回合结果：同归于尽，平局`;
                 }
                 updateScoreboard();
             }
         });
 
-        // 碰撞溅射火花
+        // 碰撞火花
         Events.on(engine, 'collisionStart', function(event) {
             event.pairs.forEach(pair => {
                 if(pair.bodyA.isActiveTop && pair.bodyB.isActiveTop) {
-                    // 生成火花粒子
                     const collisionPoint = pair.collision.supports[0] || pair.bodyA.position;
                     for(let i=0; i<8; i++) {
                         sparks.push({
-                            x: collisionPoint.x,
-                            y: collisionPoint.y,
-                            vx: (Math.random() - 0.5) * 12,
-                            vy: (Math.random() - 0.5) * 12,
-                            life: 1.0,
-                            size: Math.random() * 3 + 1
+                            x: collisionPoint.x, y: collisionPoint.y,
+                            vx: (Math.random() - 0.5) * 12, vy: (Math.random() - 0.5) * 12,
+                            life: 1.0, size: Math.random() * 3 + 1
                         });
                     }
-                    // 撞击损耗大量动量与角动量
                     Body.setAngularVelocity(pair.bodyA, pair.bodyA.angularVelocity * 0.8);
                     Body.setAngularVelocity(pair.bodyB, pair.bodyB.angularVelocity * 0.8);
                 }
@@ -429,42 +539,23 @@
         Runner.run(runner, engine);
     }
 
+    // --- 生成陀螺实体 (保留之前的逻辑) ---
     function spawnTops(rChar, bChar) {
-        // 清理旧实体
         activeBodies.forEach(b => Composite.remove(engine.world, b));
         activeBodies = [];
         sparks = [];
 
-        // 配置参数（砖块化物理属性）
-        const topOptions = {
-            restitution: 0.8, // 弹性
-            friction: 0.05,
-            density: 0.05,
-            render: { visible: false } // 交给自定义渲染
-        };
+        const topOptions = { restitution: 0.8, friction: 0.05, density: 0.05, render: { visible: false } };
 
-        // 红方
         let redBody = Bodies.rectangle(cx - 150, cy, 45, 45, topOptions);
         redBody.isActiveTop = true;
-        redBody.customStyle = {
-            char: rChar,
-            team: 'red',
-            faceColor: '#a9352e',
-            depthColor: '#7a231e'
-        };
-        // 初始高转速与向中心的冲刺初速度
+        redBody.customStyle = { char: rChar, team: 'red', faceColor: '#a9352e', depthColor: '#7a231e' };
         Body.setAngularVelocity(redBody, 0.8 + Math.random()*0.2);
         Body.setVelocity(redBody, { x: 8, y: (Math.random()-0.5)*5 });
 
-        // 蓝方
         let blueBody = Bodies.rectangle(cx + 150, cy, 45, 45, topOptions);
         blueBody.isActiveTop = true;
-        blueBody.customStyle = {
-            char: bChar,
-            team: 'blue',
-            faceColor: '#285777',
-            depthColor: '#17364c'
-        };
+        blueBody.customStyle = { char: bChar, team: 'blue', faceColor: '#285777', depthColor: '#17364c' };
         Body.setAngularVelocity(blueBody, -(0.8 + Math.random()*0.2));
         Body.setVelocity(blueBody, { x: -8, y: (Math.random()-0.5)*5 });
 
@@ -474,5 +565,3 @@
 </script>
 </body>
 </html>
-
-```
