@@ -183,6 +183,112 @@
             margin-inline: auto;
             z-index: 10;
         }
+        .preview-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(25, 25, 25, 0.72);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            z-index: 10000;
+        }
+        .preview-window {
+            width: min(920px, 100%);
+            max-height: min(92vh, 100%);
+            overflow-y: auto;
+            background: white;
+            border-radius: 22px;
+            padding: 22px;
+            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.24);
+            position: relative;
+        }
+        .preview-hidden {
+            display: none !important;
+        }
+        .preview-header {
+            font-size: clamp(1.2rem, 2.5vw, 1.5rem);
+            font-weight: bold;
+            margin-bottom: 18px;
+        }
+        .preview-close {
+            position: absolute;
+            top: 18px;
+            right: 18px;
+            width: 40px;
+            height: 40px;
+            border: none;
+            border-radius: 50%;
+            background: #eee;
+            color: #333;
+            font-size: 1.2rem;
+            cursor: pointer;
+        }
+        .preview-body {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 18px;
+        }
+        .preview-card {
+            background: #faf7f1;
+            border: 1px solid var(--border-color);
+            border-radius: 18px;
+            padding: 18px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 14px;
+        }
+        .preview-card.red {
+            border-color: rgba(185, 72, 63, 0.35);
+        }
+        .preview-card.blue {
+            border-color: rgba(53, 104, 138, 0.35);
+        }
+        .preview-title {
+            font-size: 1.15rem;
+            font-weight: bold;
+            color: var(--text-color);
+        }
+        .font-preview {
+            width: 100%;
+            min-height: 130px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: clamp(4rem, 10vw, 8rem);
+            font-weight: bold;
+            color: inherit;
+        }
+        .stat-list {
+            width: 100%;
+            display: grid;
+            gap: 10px;
+        }
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.95rem;
+            color: #444;
+        }
+        .stat-row strong {
+            font-weight: 700;
+        }
+        .preview-chart-wrapper {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+        }
+        .preview-footer {
+            margin-top: 18px;
+            display: flex;
+            justify-content: center;
+        }
+        @media (max-width: 860px) {
+            .preview-body {
+                grid-template-columns: 1fr;
+            }
+        }
         @media (max-width: 640px) {
             .input-group {
                 gap: 12px;
@@ -331,6 +437,42 @@
         </div>
     </div>
 
+    <div id="preview-modal" class="preview-modal preview-hidden">
+        <div class="preview-window">
+            <button id="btn-preview-close" class="preview-close" aria-label="关闭预览">×</button>
+            <div class="preview-header">战前对比评估</div>
+            <div class="preview-body">
+                <div class="preview-card red">
+                    <div class="preview-title">红方实体</div>
+                    <div id="preview-red-char" class="font-preview">红</div>
+                    <div class="stat-list">
+                        <div class="stat-row"><span>质量</span><strong id="preview-red-mass">—</strong></div>
+                        <div class="stat-row"><span>速度</span><strong id="preview-red-speed">—</strong></div>
+                        <div class="stat-row"><span>稳固性</span><strong id="preview-red-stability">—</strong></div>
+                    </div>
+                    <div class="preview-chart-wrapper">
+                        <canvas id="radar-red" width="260" height="260"></canvas>
+                    </div>
+                </div>
+                <div class="preview-card blue">
+                    <div class="preview-title">蓝方实体</div>
+                    <div id="preview-blue-char" class="font-preview">蓝</div>
+                    <div class="stat-list">
+                        <div class="stat-row"><span>质量</span><strong id="preview-blue-mass">—</strong></div>
+                        <div class="stat-row"><span>速度</span><strong id="preview-blue-speed">—</strong></div>
+                        <div class="stat-row"><span>稳固性</span><strong id="preview-blue-stability">—</strong></div>
+                    </div>
+                    <div class="preview-chart-wrapper">
+                        <canvas id="radar-blue" width="260" height="260"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="preview-footer">
+                <button id="btn-start-match">对比完成，开始比赛</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         const Engine = Matter.Engine,
             Render = Matter.Render,
@@ -349,7 +491,8 @@
         let activeBodies = [];
         let sparks = [];
         let roundStartTime = 0;
-
+        let roundPreview = null;
+ 
         // 追踪核心碎块（决定胜负的对象）
         let trackedBody = { red: null, blue: null };
 
@@ -366,7 +509,7 @@
         const DECAY_DANGER_ZONE = 0.02;
         const FINAL_ZERO_THRESHOLD = 0.0002; // 转速低于该值时直接归零
         const COLLISION_RETAIN = 0.999995;
-        const INITIAL_SPIN_BASE = 1;      // 大幅降低
+        const INITIAL_SPIN_BASE = 1.7;      // 大幅降低
         const INITIAL_SPIN_RANDOM = 0.1;
 
         // 平移速度相关常量
@@ -388,8 +531,11 @@
 
         const pageInput = document.getElementById('page-input');
         const pageBattle = document.getElementById('page-battle');
+        const previewModal = document.getElementById('preview-modal');
         const errorMsg = document.getElementById('input-error');
         const btnGotoBattle = document.getElementById('btn-goto-battle');
+        const btnStartMatch = document.getElementById('btn-start-match');
+        const btnPreviewClose = document.getElementById('btn-preview-close');
         const btnNextRound = document.getElementById('btn-next-round');
         const btnBackInput = document.getElementById('btn-back-input');
         const gameContainer = document.getElementById('game-container');
@@ -518,7 +664,133 @@
             return darkPixels;
         }
 
+        function clampLinearSpeedPenalty(value) {
+            const minValue = 3000;
+            const maxValue = 5800;
+            const minPenalty = 0;
+            const maxPenalty = 1000;
+            if (value <= minValue) return minPenalty;
+            if (value >= maxValue) return maxPenalty;
+            return ((value - minValue) / (maxValue - minValue)) * (maxPenalty - minPenalty) + minPenalty;
+        }
+
+        function calculateFinalSpin(initialSpin, mass) {
+            const penalty = clampLinearSpeedPenalty(mass);
+            return Math.max(0.05, initialSpin - penalty / 1000);
+        }
+
+        function normalizeScore(value, min, max) {
+            const ratio = (value - min) / (max - min);
+            return Math.round(Math.min(5, Math.max(1, ratio * 4 + 1)));
+        }
+
+        function calculateFinalMass(complexity) {
+            const density = 0.15 * (complexity / 1500);
+            return Math.round(density * BASE_SIZE * BASE_SIZE + 3000);
+        }
+
+        function calculateStability(complexity) {
+            return normalizeScore(complexity, 1500, 5200);
+        }
+
+        function drawRadarChart(canvas, scores, labels, color) {
+            const ctx = canvas.getContext('2d');
+            const size = Math.min(canvas.width, canvas.height);
+            const center = { x: size / 2, y: size / 2 };
+            const radius = size * 0.34;
+            ctx.clearRect(0, 0, size, size);
+            ctx.save();
+            ctx.translate(center.x, center.y);
+            ctx.font = '12px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.strokeStyle = '#d8d4ca';
+            ctx.lineWidth = 1;
+            for (let ring = 1; ring <= 4; ring++) {
+                ctx.beginPath();
+                ctx.arc(0, 0, (radius / 4) * ring, 0, 2 * Math.PI);
+                ctx.stroke();
+            }
+            const axisCount = scores.length;
+            for (let i = 0; i < axisCount; i++) {
+                const angle = Math.PI / 2 + (i * 2 * Math.PI) / axisCount;
+                const x = Math.cos(angle) * radius;
+                const y = -Math.sin(angle) * radius;
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.lineTo(x, y);
+                ctx.stroke();
+                ctx.fillStyle = '#333';
+                ctx.fillText(labels[i], x * 1.24, y * 1.24);
+            }
+            ctx.beginPath();
+            scores.forEach((score, i) => {
+                const value = (score - 1) / 4;
+                const angle = Math.PI / 2 + (i * 2 * Math.PI) / axisCount;
+                const x = Math.cos(angle) * radius * value;
+                const y = -Math.sin(angle) * radius * value;
+                if (i === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            });
+            ctx.closePath();
+            ctx.fillStyle = `${color}22`;
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2;
+            ctx.fill();
+            ctx.stroke();
+            scores.forEach((score, i) => {
+                const value = (score - 1) / 4;
+                const angle = Math.PI / 2 + (i * 2 * Math.PI) / axisCount;
+                const x = Math.cos(angle) * radius * value;
+                const y = -Math.sin(angle) * radius * value;
+                ctx.beginPath();
+                ctx.arc(x, y, 5, 0, 2 * Math.PI);
+                ctx.fillStyle = color;
+                ctx.fill();
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            });
+            ctx.restore();
+        }
+
         function isChinese(str) { return /^[\u4e00-\u9fa5]+$/.test(str); }
+
+        function preparePreview() {
+            const rChar = redName[0];
+            const bChar = blueName[0];
+            const rMass = getCharComplexity(rChar);
+            const bMass = getCharComplexity(bChar);
+            const rFinalMass = calculateFinalMass(rMass);
+            const bFinalMass = calculateFinalMass(bMass);
+            const redInitialSpin = INITIAL_SPIN_BASE + Math.random() * INITIAL_SPIN_RANDOM;
+            const blueInitialSpin = INITIAL_SPIN_BASE + Math.random() * INITIAL_SPIN_RANDOM;
+            const redFinalSpin = calculateFinalSpin(redInitialSpin, rFinalMass);
+            const blueFinalSpin = calculateFinalSpin(blueInitialSpin, bFinalMass);
+            roundPreview = {
+                red: { char: rChar, mass: rFinalMass, speed: Math.round(redFinalSpin * 1000), stability: getCharComplexity(rChar), finalSpin: redFinalSpin },
+                blue: { char: bChar, mass: bFinalMass, speed: Math.round(blueFinalSpin * 1000), stability: getCharComplexity(bChar), finalSpin: blueFinalSpin }
+            };
+            document.getElementById('preview-red-char').textContent = rChar;
+            document.getElementById('preview-blue-char').textContent = bChar;
+            const redMassScore = normalizeScore(roundPreview.red.mass, 3000, 5800);
+            const blueMassScore = normalizeScore(roundPreview.blue.mass, 3000, 5800);
+            const redSpeedScore = normalizeScore(roundPreview.red.speed, 50, 1600);
+            const blueSpeedScore = normalizeScore(roundPreview.blue.speed, 50, 1600);
+            const redStabilityScore = calculateStability(roundPreview.red.stability);
+            const blueStabilityScore = calculateStability(roundPreview.blue.stability);
+            document.getElementById('preview-red-mass').textContent = `${redMassScore} / 5`;
+            document.getElementById('preview-red-speed').textContent = `${redSpeedScore} / 5`;
+            document.getElementById('preview-red-stability').textContent = `${redStabilityScore} / 5`;
+            document.getElementById('preview-blue-mass').textContent = `${blueMassScore} / 5`;
+            document.getElementById('preview-blue-speed').textContent = `${blueSpeedScore} / 5`;
+            document.getElementById('preview-blue-stability').textContent = `${blueStabilityScore} / 5`;
+            drawRadarChart(document.getElementById('radar-red'), [redMassScore, redSpeedScore, redStabilityScore], ['质量', '速度', '稳固'], '#b9483f');
+            drawRadarChart(document.getElementById('radar-blue'), [blueMassScore, blueSpeedScore, blueStabilityScore], ['质量', '速度', '稳固'], '#35688a');
+        }
 
         btnGotoBattle.addEventListener('click', () => {
             const rName = document.getElementById('red-name').value.trim();
@@ -540,10 +812,21 @@
             errorMsg.textContent = '';
             currentRound = 0;
             score = { red: 0, blue: 0 };
-            pageInput.style.display = 'none';
-            pageBattle.style.display = 'block';
             buildRosterUI();
             updateScoreboard();
+            preparePreview();
+            pageInput.style.display = 'none';
+            previewModal.classList.remove('preview-hidden');
+        });
+
+        btnPreviewClose.addEventListener('click', () => {
+            previewModal.classList.add('preview-hidden');
+            pageInput.style.display = 'flex';
+        });
+
+        btnStartMatch.addEventListener('click', () => {
+            previewModal.classList.add('preview-hidden');
+            pageBattle.style.display = 'block';
             statusEl.textContent = '准备就绪';
             btnNextRound.textContent = '开始第 1 回合';
             btnNextRound.style.display = 'block';
@@ -672,12 +955,10 @@
                 bChar = blueName[currentRound];
             let rMass = getCharComplexity(rChar),
                 bMass = getCharComplexity(bChar);
-
+ 
             // 【新增】计算实际物理质量用于显示
-            let rDensity = 0.15 * (rMass / 1500);
-            let bDensity = 0.15 * (bMass / 1500);
-            let rFinalMass = Math.round(rDensity * BASE_SIZE * BASE_SIZE+3000);
-            let bFinalMass = Math.round(bDensity * BASE_SIZE * BASE_SIZE+3000);
+            let rFinalMass = calculateFinalMass(rMass);
+            let bFinalMass = calculateFinalMass(bMass);
 
             statusEl.innerHTML = `第 ${currentRound + 1} 回合... <span style="font-size:0.8rem"> (红质:${rFinalMass} 蓝质:${bFinalMass})</span>`;
             updateRosterHighlight();
@@ -970,16 +1251,24 @@
                 density: density,
                 render: { visible: false }
             });
+            let rFinalMass = calculateFinalMass(rMass);
+            let bFinalMass = calculateFinalMass(bMass);
             let redInitialSpin = INITIAL_SPIN_BASE + Math.random() * INITIAL_SPIN_RANDOM;
             let blueInitialSpin = INITIAL_SPIN_BASE + Math.random() * INITIAL_SPIN_RANDOM;
+            let redFinalSpin = (roundPreview && roundPreview.red && currentRound === 0)
+                ? roundPreview.red.finalSpin
+                : calculateFinalSpin(redInitialSpin, rFinalMass);
+            let blueFinalSpin = (roundPreview && roundPreview.blue && currentRound === 0)
+                ? roundPreview.blue.finalSpin
+                : calculateFinalSpin(blueInitialSpin, bFinalMass);
             let redBody = Bodies.rectangle(cx - 150, cy, BASE_SIZE, BASE_SIZE, buildOptions(rDensity));
             redBody.isActiveTop = true;
             redBody.isTopPart = true;
             redBody.isFragment = false;
             redBody.isLargest = true;
             redBody.customStyle = { char: rChar, team: 'red', faceColor: '#a9352e', depthColor: '#7a231e', spinRetain: rRetain,
-                initialSpin: redInitialSpin, coreMass: rDensity * BASE_SIZE * BASE_SIZE };
-            Body.setAngularVelocity(redBody, redInitialSpin);
+                initialSpin: redFinalSpin, coreMass: rDensity * BASE_SIZE * BASE_SIZE };
+            Body.setAngularVelocity(redBody, redFinalSpin);
             Body.setVelocity(redBody, { x: 1.2, y: (Math.random() - 0.5) * 0.8 });
             let blueBody = Bodies.rectangle(cx + 150, cy, BASE_SIZE, BASE_SIZE, buildOptions(bDensity));
             blueBody.isActiveTop = true;
@@ -987,8 +1276,8 @@
             blueBody.isFragment = false;
             blueBody.isLargest = true;
             blueBody.customStyle = { char: bChar, team: 'blue', faceColor: '#285777', depthColor: '#17364c',
-                spinRetain: bRetain, initialSpin: blueInitialSpin, coreMass: bDensity * BASE_SIZE * BASE_SIZE };
-            Body.setAngularVelocity(blueBody, -blueInitialSpin);
+                spinRetain: bRetain, initialSpin: blueFinalSpin, coreMass: bDensity * BASE_SIZE * BASE_SIZE };
+            Body.setAngularVelocity(blueBody, -blueFinalSpin);
             Body.setVelocity(blueBody, { x: -1.2, y: (Math.random() - 0.5) * 0.8 });
             trackedBody.red = redBody;
             trackedBody.blue = blueBody;
