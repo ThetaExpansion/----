@@ -13,7 +13,6 @@
         html,
         body {
             width: 100%;
-            height: 100%;
             overflow-x: hidden;
         }
         :root {
@@ -32,7 +31,7 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            min-height: 100dvh;
+            min-height: 100vh;
             overflow-x: hidden;
         }
         h1 {
@@ -46,14 +45,14 @@
             flex-direction: column;
             align-items: center;
             width: 100%;
-            min-height: 100dvh;
+            min-height: 100vh;
             padding: 24px 16px 40px;
             justify-content: center;
         }
         #page-battle {
             display: none;
             width: 100%;
-            min-height: 100dvh;
+            min-height: 100vh;
             overflow-y: auto;
             padding: 14px 0 28px;
         }
@@ -61,14 +60,14 @@
             width: 100%;
             display: flex;
             justify-content: center;
-            overflow: visible;
+            overflow: hidden;
             padding: 0 10px 16px;
         }
         #battle-scale-inner {
             display: flex;
             flex-direction: column;
             align-items: center;
-            width: min(900px, 100%);
+            width: min(800px, 100%);
             flex-shrink: 0;
         }
         .input-card {
@@ -150,24 +149,22 @@
             border: 1px solid var(--border-color);
         }
         #view-wrapper {
+            perspective: 1200px;
             margin-top: 20px;
             width: 100%;
             display: flex;
             justify-content: center;
-            align-items: center;
-            padding: 0 8px;
-            overflow: visible;
         }
         #game-container {
             position: relative;
-            width: min(86vw, 86dvh, 720px);
-            max-width: min(100%, 720px);
+            width: min(600px, 100%);
+            max-width: 100%;
             aspect-ratio: 1 / 1;
             border-radius: 50%;
             box-shadow: inset 0 30px 70px rgba(60, 45, 30, 0.18), 0 25px 50px rgba(60, 45, 30, 0.10);
             background: radial-gradient(circle at 42% 38%, #e5e2d8 0%, #d9d7cc 45%, #edece6 100%);
-            transform: none;
-            transform-style: flat;
+            transform: rotateX(55deg);
+            transform-style: preserve-3d;
             overflow: hidden;
         }
         canvas {
@@ -313,9 +310,6 @@
             }
             .battle-controls {
                 margin-top: 12px;
-            }
-            #game-container {
-                width: min(94vw, 94dvh, 560px);
             }
         }
         .input-group {
@@ -524,76 +518,6 @@
 
         // 碎裂极端程度
         const SHATTER_EXTREME_POWER = 2.6;
-        const SHATTER_MIN_SPIN = 0.4;
-        const ROUND_STOP_DURATION = 2200;
-        // 碎裂坚固度：1=最脆，2=较脆，3=默认，4=较稳，5=最稳；自己改这里即可
-        const SHATTER_STABILITY_LEVEL = 3;
-
-        function getStabilityModifier(level) {
-            switch (level) {
-                case 1: return 1.10;
-                case 2: return 1.05;
-                case 4: return 0.95;
-                case 5: return 0.90;
-                default: return 1.00;
-            }
-        }
-
-        function estimateCollisionStress(bodyA, bodyB) {
-            const relativeVelocityX = bodyB.velocity.x - bodyA.velocity.x;
-            const relativeVelocityY = bodyB.velocity.y - bodyA.velocity.y;
-            const dx = bodyB.position.x - bodyA.position.x;
-            const dy = bodyB.position.y - bodyA.position.y;
-            const dist = Math.hypot(dx, dy) || 1;
-            const nx = dx / dist;
-            const ny = dy / dist;
-            const normalSpeed = relativeVelocityX * nx + relativeVelocityY * ny;
-            const tangentSpeed = relativeVelocityX * -ny + relativeVelocityY * nx;
-            const angularDelta = Math.abs(bodyA.angularVelocity - bodyB.angularVelocity);
-            return Math.max(0, normalSpeed * 0.8 + Math.abs(tangentSpeed) * 0.6 + angularDelta * 8);
-        }
-
-        function shouldShatter(body, stressScore) {
-            if (!body || !body.isActiveTop || body.isFragment) return false;
-            if (Math.abs(body.angularVelocity) < SHATTER_MIN_SPIN) return false;
-            const stabilityMultiplier = getStabilityModifier(SHATTER_STABILITY_LEVEL);
-            const probability = Math.min(0.72, Math.max(0, stressScore / 140) * stabilityMultiplier);
-            return Math.random() < probability;
-        }
-
-        function beginRoundStopMotion() {
-            activeBodies.forEach(body => {
-                if (!body || body.isStatic) return;
-                body.finishMotion = true;
-                body.finishStartTime = performance.now();
-                body.finishFromState = {
-                    x: body.velocity.x,
-                    y: body.velocity.y,
-                    angular: body.angularVelocity
-                };
-            });
-        }
-
-        function updateRoundStopMotion(now) {
-            activeBodies.forEach(body => {
-                if (!body || !body.finishMotion) return;
-                const elapsed = now - body.finishStartTime;
-                const progress = Math.min(1, elapsed / ROUND_STOP_DURATION);
-                const factor = 1 - progress;
-                const targetVelocity = {
-                    x: body.finishFromState.x * factor,
-                    y: body.finishFromState.y * factor
-                };
-                Body.setVelocity(body, targetVelocity);
-                Body.setAngularVelocity(body, body.finishFromState.angular * factor);
-                if (progress >= 1) {
-                    Body.setVelocity(body, { x: 0, y: 0 });
-                    Body.setAngularVelocity(body, 0);
-                    body.finishMotion = false;
-                    body.isActiveTop = false;
-                }
-            });
-        }
 
         // 临近停止加速衰减函数（仍保留，用于快速降到归零阈值附近）
         function getExtraDecayFactor(angularVelocity) {
@@ -705,20 +629,19 @@
         function celebrateRoundWinner(team) {
             const rosterEl = document.getElementById(team === 'red' ? 'roster-red' : 'roster-blue');
             const rect = rosterEl.getBoundingClientRect();
-            const colors = team === 'red'
-                ? ['#b9483f', '#f2b84b', '#ffffff']
-                : ['#35688a', '#8ac4d9', '#ffffff'];
-            spawnConfetti(rect.left + rect.width / 2, rect.top + rect.height / 2, { count: 30, spread: 6, gravity: 0.16,
-                colors, big: false });
+            spawnConfetti(rect.left + rect.width / 2, rect.top + rect.height / 2, { count: 45, spread: 7, gravity: 0.18,
+                big: false });
         }
 
         function celebrateMatchWinner() {
             const redRect = document.getElementById('roster-red').getBoundingClientRect();
             const blueRect = document.getElementById('roster-blue').getBoundingClientRect();
-            spawnConfetti(redRect.left + redRect.width / 2, redRect.top + redRect.height / 2, { count: 70, spread: 9,
-                gravity: 0.12, colors: ['#b9483f', '#f2b84b', '#ffffff'], big: true });
-            spawnConfetti(blueRect.left + blueRect.width / 2, blueRect.top + blueRect.height / 2, { count: 70, spread: 9,
-                gravity: 0.12, colors: ['#35688a', '#8ac4d9', '#ffffff'], big: true });
+            spawnConfetti(redRect.left + redRect.width / 2, redRect.top + redRect.height / 2, { count: 100, spread: 11,
+                gravity: 0.12, big: true });
+            spawnConfetti(blueRect.left + blueRect.width / 2, blueRect.top + blueRect.height / 2, { count: 100, spread: 11,
+                gravity: 0.12, big: true });
+            spawnConfetti(window.innerWidth / 2, window.innerHeight * 0.15, { count: 140, spread: 13, gravity: 0.1,
+                big: true });
         }
 
         function getCharComplexity(char) {
@@ -836,12 +759,9 @@
 
         function isChinese(str) { return /^[\u4e00-\u9fa5]+$/.test(str); }
 
-        function preparePreview(roundIndex = 0) {
-            if (!redName || !blueName || roundIndex >= redName.length) {
-                return false;
-            }
-            const rChar = redName[roundIndex];
-            const bChar = blueName[roundIndex];
+        function preparePreview() {
+            const rChar = redName[0];
+            const bChar = blueName[0];
             const rMass = getCharComplexity(rChar);
             const bMass = getCharComplexity(bChar);
             const rFinalMass = calculateFinalMass(rMass);
@@ -870,17 +790,6 @@
             document.getElementById('preview-blue-stability').textContent = `${blueStabilityScore} / 5`;
             drawRadarChart(document.getElementById('radar-red'), [redMassScore, redSpeedScore, redStabilityScore], ['质量', '速度', '稳固'], '#b9483f');
             drawRadarChart(document.getElementById('radar-blue'), [blueMassScore, blueSpeedScore, blueStabilityScore], ['质量', '速度', '稳固'], '#35688a');
-            return true;
-        }
-
-        function showPreviewForRound(roundIndex = currentRound) {
-            if (!preparePreview(roundIndex)) {
-                previewModal.classList.add('preview-hidden');
-                return false;
-            }
-            btnStartMatch.textContent = roundIndex === 0 ? '对比完成，开始比赛' : `对比完成，开始第 ${roundIndex + 1} 回合`;
-            previewModal.classList.remove('preview-hidden');
-            return true;
         }
 
         btnGotoBattle.addEventListener('click', () => {
@@ -912,9 +821,7 @@
 
         btnPreviewClose.addEventListener('click', () => {
             previewModal.classList.add('preview-hidden');
-            if (pageBattle.style.display === 'none') {
-                pageInput.style.display = 'flex';
-            }
+            pageInput.style.display = 'flex';
         });
 
         btnStartMatch.addEventListener('click', () => {
@@ -923,11 +830,9 @@
             statusEl.textContent = '准备就绪';
             btnNextRound.textContent = '开始第 1 回合';
             btnNextRound.style.display = 'block';
-            if (!engine) {
-                initPhysics();
-            }
+            initPhysics();
+            gameState = 'ROUND_OVER';
             requestAnimationFrame(fitBattleScale);
-            startNextRound();
         });
 
         function cleanupBattleState() {
@@ -1000,13 +905,7 @@
         });
  
         btnNextRound.addEventListener('click', () => {
-            if (gameState === 'ROUND_OVER') {
-                if (currentRound < redName.length) {
-                    showPreviewForRound(currentRound);
-                } else {
-                    previewModal.classList.add('preview-hidden');
-                }
-            }
+            if (gameState === 'ROUND_OVER') startNextRound();
         });
 
         function buildRosterUI() {
@@ -1156,19 +1055,24 @@
                         B = pair.bodyB;
                     if (A.isTopPart && B.isTopPart) {
                         const collisionPoint = pair.collision.supports[0] || A.position;
-                        for (let i = 0; i < 8; i++) {
+                        for (let i = 0; i < 10; i++) {
                             sparks.push({
                                 x: collisionPoint.x,
                                 y: collisionPoint.y,
-                                vx: (Math.random() - 0.5) * 12,
-                                vy: (Math.random() - 0.5) * 12,
+                                vx: (Math.random() - 0.5) * 15,
+                                vy: (Math.random() - 0.5) * 15,
                                 life: 1.0,
-                                size: Math.random() * 3 + 1
+                                size: Math.random() * 4 + 1
                             });
                         }
-                        const stressScore = estimateCollisionStress(A, B);
-                        if (!A.isFragment && A.isActiveTop && shouldShatter(A, stressScore)) toShatter.add(A);
-                        if (!B.isFragment && B.isActiveTop && shouldShatter(B, stressScore)) toShatter.add(B);
+                        let speedA = Math.abs(A.velocity.x) + Math.abs(A.velocity.y) + Math.abs(A.angularVelocity) *
+                            15;
+                        let speedB = Math.abs(B.velocity.x) + Math.abs(B.velocity.y) + Math.abs(B.angularVelocity) *
+                            15;
+                        let impact = (speedA + speedB) / 3;
+                        let shatterProb = Math.min(0.3, 0.3 * (impact / 35));
+                        if (!A.isFragment && A.isActiveTop && Math.random() < shatterProb) toShatter.add(A);
+                        if (!B.isFragment && B.isActiveTop && Math.random() < shatterProb) toShatter.add(B);
                         Body.setAngularVelocity(A, A.angularVelocity * COLLISION_RETAIN);
                         Body.setAngularVelocity(B, B.angularVelocity * COLLISION_RETAIN);
                     }
@@ -1178,68 +1082,64 @@
             });
 
             Events.on(engine, 'beforeUpdate', function() {
-                if (gameState === 'PLAYING') {
-                    activeBodies.forEach(body => {
-                        if (!body.isActiveTop) return;
-                        // 盆地引力
-                        let dx = cx - body.position.x;
-                        let dy = cy - body.position.y;
-                        let dist = Math.sqrt(dx * dx + dy * dy);
-                        if (dist > 30) {
-                            let force = 0.00012 * body.mass;
-                            Body.applyForce(body, body.position, { x: (dx / dist) * force, y: (dy / dist) *
-                                    force });
-                        }
-                        // 转速衰减，并强制归零
-                        let massFactor = 1;
-                        if (body.customStyle.coreMass) {
-                            let normalizedMass = Math.min(1, body.customStyle.coreMass / (BASE_SIZE * BASE_SIZE * 0.08));
-                            massFactor = 0.98 + 0.02 * normalizedMass;
-                        }
-                        let newAngVel = body.angularVelocity * body.customStyle.spinRetain * getExtraDecayFactor(body.angularVelocity) * massFactor;
-                        if (Math.abs(newAngVel) < FINAL_ZERO_THRESHOLD) {
-                            newAngVel = 0;
-                            body.isActiveTop = false; // 直接标记为停止旋转
-                        }
-                        Body.setAngularVelocity(body, newAngVel);
-                        // 平移速度衰减，转速为0时立即归零
-                        let spinRatio = Math.min(1, Math.abs(body.angularVelocity) / (body.customStyle.initialSpin || 1));
-                        let spinLinearFactorPerSecond = Math.pow(spinRatio, SPIN_LINEAR_COUPLING_POWER);
-                        let spinLinearFactorPerFrame = Math.pow(spinLinearFactorPerSecond, 1 / 60);
-                        Body.setVelocity(body, {
-                            x: body.velocity.x * LINEAR_DRAG * spinLinearFactorPerFrame,
-                            y: body.velocity.y * LINEAR_DRAG * spinLinearFactorPerFrame
-                        });
-                    });
-                    // 胜负判定：核心碎块是否完全停转
-                    if (activeBodies.length > 0 && (Date.now() - roundStartTime > 1500)) {
-                        let redCoreAlive = trackedBody.red && trackedBody.red.isActiveTop;
-                        let blueCoreAlive = trackedBody.blue && trackedBody.blue.isActiveTop;
-                        if (!redCoreAlive || !blueCoreAlive) {
-                            gameState = 'ROUND_OVER';
-                            beginRoundStopMotion();
-                            btnNextRound.disabled = false;
-                            if (currentRound >= redName.length) {
-                                btnNextRound.textContent = '查看最终结算';
-                            } else {
-                                btnNextRound.textContent = `开始第 ${currentRound + 1} 回合`;
-                            }
-                            if (redCoreAlive && !blueCoreAlive) {
-                                score.red++;
-                                statusEl.textContent = `本回合：红方【胜】（蓝方核心碎块先完全停转）`;
-                                celebrateRoundWinner('red');
-                            } else if (blueCoreAlive && !redCoreAlive) {
-                                score.blue++;
-                                statusEl.textContent = `本回合：蓝方【胜】（红方核心碎块先完全停转）`;
-                                celebrateRoundWinner('blue');
-                            } else {
-                                statusEl.textContent = `本回合：双方核心碎块同时停止，平局`;
-                            }
-                            updateScoreboard();
-                        }
+                if (gameState !== 'PLAYING') return;
+                activeBodies.forEach(body => {
+                    if (!body.isActiveTop) return;
+                    // 盆地引力
+                    let dx = cx - body.position.x;
+                    let dy = cy - body.position.y;
+                    let dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist > 30) {
+                        let force = 0.00012 * body.mass;
+                        Body.applyForce(body, body.position, { x: (dx / dist) * force, y: (dy / dist) *
+                                force });
                     }
-                } else if (gameState === 'ROUND_OVER') {
-                    updateRoundStopMotion(performance.now());
+                    // 转速衰减，并强制归零
+                    let massFactor = 1;
+                    if (body.customStyle.coreMass) {
+                        let normalizedMass = Math.min(1, body.customStyle.coreMass / (BASE_SIZE * BASE_SIZE * 0.08));
+                        massFactor = 0.98 + 0.02 * normalizedMass;
+                    }
+                    let newAngVel = body.angularVelocity * body.customStyle.spinRetain * getExtraDecayFactor(body.angularVelocity) * massFactor;
+                    if (Math.abs(newAngVel) < FINAL_ZERO_THRESHOLD) {
+                        newAngVel = 0;
+                        body.isActiveTop = false; // 直接标记为停止旋转
+                    }
+                    Body.setAngularVelocity(body, newAngVel);
+                    // 平移速度衰减，转速为0时立即归零
+                    let spinRatio = Math.min(1, Math.abs(body.angularVelocity) / (body.customStyle.initialSpin || 1));
+                    let spinLinearFactorPerSecond = Math.pow(spinRatio, SPIN_LINEAR_COUPLING_POWER);
+                    let spinLinearFactorPerFrame = Math.pow(spinLinearFactorPerSecond, 1 / 60);
+                    Body.setVelocity(body, {
+                        x: body.velocity.x * LINEAR_DRAG * spinLinearFactorPerFrame,
+                        y: body.velocity.y * LINEAR_DRAG * spinLinearFactorPerFrame
+                    });
+                });
+                // 胜负判定：核心碎块是否完全停转
+                if (activeBodies.length > 0 && (Date.now() - roundStartTime > 1500)) {
+                    let redCoreAlive = trackedBody.red && trackedBody.red.isActiveTop;
+                    let blueCoreAlive = trackedBody.blue && trackedBody.blue.isActiveTop;
+                    if (!redCoreAlive || !blueCoreAlive) {
+                        gameState = 'ROUND_OVER';
+                        btnNextRound.disabled = false;
+                        if (currentRound >= redName.length) {
+                            btnNextRound.textContent = '查看最终结算';
+                        } else {
+                            btnNextRound.textContent = `开始第 ${currentRound + 1} 回合`;
+                        }
+                        if (redCoreAlive && !blueCoreAlive) {
+                            score.red++;
+                            statusEl.textContent = `本回合：红方【胜】（蓝方核心碎块先完全停转）`;
+                            celebrateRoundWinner('red');
+                        } else if (blueCoreAlive && !redCoreAlive) {
+                            score.blue++;
+                            statusEl.textContent = `本回合：蓝方【胜】（红方核心碎块先完全停转）`;
+                            celebrateRoundWinner('blue');
+                        } else {
+                            statusEl.textContent = `本回合：双方核心碎块同时停止，平局`;
+                        }
+                        updateScoreboard();
+                    }
                 }
             });
 
