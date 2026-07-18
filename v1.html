@@ -1239,7 +1239,7 @@
 			const DECAY_DANGER_ZONE = 0.02;
 			const FINAL_ZERO_THRESHOLD = 0.002; // 转速低于该值时直接归零
 			const COLLISION_RETAIN = 0.999995;
-			const INITIAL_SPIN_BASE = 1.9; // 大幅降低
+			const INITIAL_SPIN_BASE = 2.3; // 大幅降低
 			const INITIAL_SPIN_RANDOM = 0.1;
 
 			// 平移速度相关常量
@@ -1432,7 +1432,7 @@
 				const minValue = 3000;
 				const maxValue = 5800;
 				const minPenalty = 0;
-				const maxPenalty = 1000;
+				const maxPenalty = 2300;
 				if (value <= minValue) return minPenalty;
 				if (value >= maxValue) return maxPenalty;
 				return (
@@ -1957,8 +1957,8 @@
 							let stabA = A.customStyle.stabilityScore || 3;
 							let stabB = B.customStyle.stabilityScore || 3;
 							// 稳固性影响碎裂阈值：1分=16, 3分=28, 5分=40
-							let thresholdA =  stabA * 4;
-							let thresholdB = stabB * 4;
+							let thresholdA =  stabA * 2.5;
+							let thresholdB = stabB * 2.5;
 							// 稳固性影响碎裂概率乘数：1分=1.0, 3分=0.65, 5分=0.3
 							let multA = 0.4 + (5 - stabA) * 0.2;
 							let multB = 0.4 + (5 - stabB) * 0.2;
@@ -2197,8 +2197,8 @@
 				sparks = [];
 				let rDensity = 0.08 * (rMass / 1200);
 				let bDensity = 0.08 * (bMass / 1200);
-				let rRetain = Math.min(0.9998, 0.993 + (rMass / 3000) * 0.004);
-				let bRetain = Math.min(0.9998, 0.993 + (bMass / 3000) * 0.004);
+				let rRetain = Math.min(0.9998, 0.999- (rMass / 3000) * 0.004);
+				let bRetain = Math.min(0.9998, 0.999- (bMass / 3000) * 0.004);
 				const redStabilityScore = calculateStability(rMass);
 				const blueStabilityScore = calculateStability(bMass);
 				const buildOptions = (density, stabilityScore) => ({
@@ -2267,7 +2267,7 @@
 					coreMass: bDensity * BASE_SIZE * BASE_SIZE,
 					stabilityScore: blueStabilityScore,
 				};
-				Body.setAngularVelocity(blueBody, -blueFinalSpin);
+				Body.setAngularVelocity(blueBody, blueFinalSpin);
 				Body.setVelocity(blueBody, { x: -2, y: (blueRand - 0.5) * 0.8 });
 				trackedBody.red = redBody;
 				trackedBody.blue = blueBody;
