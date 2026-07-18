@@ -1247,7 +1247,7 @@
 			const SPIN_LINEAR_COUPLING_POWER = 0.35;
 
 			// 碎裂极端程度
-			const SHATTER_EXTREME_POWER = 2.6;
+			const SHATTER_EXTREME_POWER = 1.7;
 
 			// 临近停止加速衰减函数（仍保留，用于快速降到归零阈值附近）
 			function getExtraDecayFactor(angularVelocity) {
@@ -1957,8 +1957,8 @@
 							let stabA = A.customStyle.stabilityScore || 3;
 							let stabB = B.customStyle.stabilityScore || 3;
 							// 稳固性影响碎裂阈值：1分=16, 3分=28, 5分=40
-							let thresholdA = 10 + stabA * 6;
-							let thresholdB = 10 + stabB * 6;
+							let thresholdA =  stabA * 4;
+							let thresholdB = stabB * 4;
 							// 稳固性影响碎裂概率乘数：1分=1.0, 3分=0.65, 5分=0.3
 							let multA = 0.4 + (5 - stabA) * 0.2;
 							let multB = 0.4 + (5 - stabB) * 0.2;
@@ -2085,7 +2085,7 @@
 			function shatterBody(body) {
 				if (!body.isActiveTop) return;
 				const half = BASE_SIZE / 2;
-				const MIN_FRAG = 6;
+				const MIN_FRAG = 10;
 				let rx = skewedSplitRatio();
 				let ry = skewedSplitRatio();
 				let pivotX = -half + rx * BASE_SIZE;
@@ -2136,7 +2136,7 @@
 					let worldX = body.position.x + f.ox * cos - f.oy * sin;
 					let worldY = body.position.y + f.ox * sin + f.oy * cos;
 					let frag = Bodies.rectangle(worldX, worldY, f.w, f.h, {
-						restitution: 0.18,
+						restitution: 0.13,
 						friction: 0.04,
 						frictionAir: 0.006,
 						density: body.density,
