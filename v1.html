@@ -1957,7 +1957,7 @@
 							let stabA = A.customStyle.stabilityScore || 3;
 							let stabB = B.customStyle.stabilityScore || 3;
 							// 稳固性影响碎裂阈值：1分=16, 3分=28, 5分=40
-							let thresholdA = -10 stabA * 6;
+							let thresholdA = -10 + stabA * 6;
 							let thresholdB = -10 + stabB * 6;
 							// 稳固性影响碎裂概率乘数：1分=1.0, 3分=0.65, 5分=0.3
 							let multA = 0.4 + (5 - stabA) * 0.2;
