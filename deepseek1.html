@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>汉字陀螺大战 - Word Spin Battle</title>
+    <style>
+        /* ================= UI & UX 极简主义设计 (Anthropic Style) ================= */
+        :root {
+            --bg-color: #FAFAFA;
+            --text-color: #333333;
+            --red-team: #D32F2F;
+            --blue-team: #1976D2;
+            --border-color: #E0E0E0;
+            --font-family: -apple-system, BlinkMacSystemFont, "Noto Serif SC", "Songti SC", serif;
+        }
+
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: var(--font-family);
+            overflow: hidden; /* 防止移动端滚动与溢出 */
+        }
+
+        /* 界面A：输入准备阶段 */
+        #screen-a {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            height: 100vh; width: 100vw;
+            transition: opacity 0.8s ease-in-out;
+            position: absolute; top: 0; left: 0; z-index: 10;
+            background: var(--bg-color);
+        }
+
+        .title { font-size: 2.5rem; font-weight: 300; margin-bottom: 3rem; letter-spacing: 2px; }
+
+        .input-container {
+            display: flex; gap: 4rem; margin-bottom: 3rem;
+            flex-wrap: wrap; justify-content: center;
+        }
+
+        .team-box { display: flex; flex-direction: column; align-items: center; }
+        .team-label { font-size: 1.2rem; margin-bottom: 1rem; font-weight: 500; }
+        .team-label.red { color: var(--red-team); }
+        .team-label.blue { color: var(--blue-team); }
+
+        input[type="text"] {
+            font-size: 2rem; padding: 0.5rem; width: 150px; text-align: center;
+            border: 1px solid var(--border-color); border-radius: 8px;
+            background: transparent; outline: none; transition: border-color 0.3s;
+            font-family: var(--font-family);
+        }
+        input[type="text"]:focus { border-color: #888; }
+
+        .error-msg {
+            color: var(--red-team); height: 20px; font-size: 0.9rem;
+            margin-bottom: 1.5rem; opacity: 0; transition: opacity 0.3s;
+        }
+
+        button {
+            padding: 12px 40px; font-size: 1.2rem; font-weight: 300;
+            background-color: var(--text-color); color: var(--bg-color);
+            border: none; border-radius: 30px; cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s; font-family: var(--font-family);
+        }
+        button:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+
+        /* 界面B：战斗阶段 */
+        #screen-b {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; /* 让鼠标事件穿透到Canvas */
+            display: none; opacity: 0; z-index: 5;
+        }
+
+        .scoreboard {
+            position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
+            display: flex; gap: 3rem; align-items: center;
+            background: rgba(250, 250, 250, 0.9); padding: 10px 30px;
+            border-radius: 40px; box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        .score { font-size: 2rem; font-weight: bold; }
+        .score.red { color: var(--red-team); }
+        .score.blue { color: var(--blue-team); }
+        .vs { font-size: 1.2rem; color: #999; }
+
+        .char-indicator {
+            position: absolute; top: 90px; left: 50%; transform: translateX(-50%);
+            display: flex; gap: 5rem; font-size: 2.5rem;
+        }
+        .current-char {
+            position: relative; opacity: 0.3; transition: opacity 0.3s;
+        }
+        .current-char.active { opacity: 1; }
+        .current-char.red.active { color: var(--red-team); text-shadow: 0 0 10px rgba(211,47,47,0.3); }
+        .current-char.blue.active { color: var(--blue-team); text-shadow: 0 0 10px rgba(25,118,210,0.3); }
+
+        /* ThreeJS Canvas */
+        #canvas-container { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1; }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cannon.js/0.6.2/cannon.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+</head>
+<body>
+
+    <div id="screen-a">
+        <div class="title">汉字陀螺大战</div>
+        <div class="input-container">
+            <div class="team-box">
+                <div class="team-label red">红队 (Red)</div>
+                <input type="text" id="input-red" placeholder="2~5个汉字" maxlength="5">
+            </div>
+            <div class="team-box">
+                <div class="team-label blue">蓝队 (Blue)</div>
+                <input type="text" id="input-blue" placeholder="2~5个汉字" maxlength="5">
+            </div>
+        </div>
+        <div class="error-msg" id="error-msg">字数必须相等且为纯汉字 (2~5字)</div>
+        <button onclick="startGame()">开始对决</button>
+    </div>
+
+    <div id="screen-b">
+        <div class="scoreboard">
+            <div class="score red" id="score-red">0</div>
+            <div class="vs">VS</div>
+            <div class="score blue" id="score-blue">0</div>
+        </div>
+        <div class="char-indicator">
+            <div class="current-char red" id="char-red"></div>
+            <div class="current-char blue" id="char-blue"></div>
+        </div>
+    </div>
+
+    <div id="canvas-container"></div>
+
+<script>
+/**
+ * ==========================================
+ * 物理与数学参数配置区 (可独立调参)
+ * ==========================================
+ */
+const PHYSICS_CONFIG = {
+    omega_0: 25,               // 初始角速度 (rad/s)
+    T_max: 20,                 // 陀螺理论最大旋转寿命 (秒)
+    k_decay: 1.8,              // 角速度衰减非线性指数 (k)
+    restitution: 0.15,         // 碰撞恢复系数 (0.1~0.2，避免弹飞)
+    friction: 0.3,             // 物理接触摩擦力
+    basin_attraction: 2.0,     // 盆地中心向心力系数
+    break_prob_base: 0.4,      // 基础最大碎裂概率 (40%)
+    impulse_threshold: 15,     // 触发碎裂计算的最小碰撞冲量
+    drop_height: 15            // 初始空投高度
+};
+
+let redWords = "";
+let blueWords = "";
+let currentRound = 0;
+let scores = { red: 0, blue: 0 };
+
+let scene, camera, renderer, world;
+let arenaMaterial, topMaterial, contactMaterial;
+let activeTops = []; // 存放当前对战的两个陀螺对象
+let debrisBodies = []; // 存放碎裂残渣
+let animationId;
+let clock = new THREE.Clock();
+
+let isRoundActive = false;
+
+// ================= UI 与路由逻辑 =================
+function validateInput(r, b) {
+    const zhRegex = /^[\u4e00-\u9fa5]{2,5}$/;
+    if (!zhRegex.test(r) || !zhRegex.test(b)) return "必须输入2~5个纯汉字";
+    if (r.length !== b.length) return "红蓝两队字数必须严格相等";
+    return "";
+}
+
+function startGame() {
+    const inputRed = document.getElementById('input-red').value.trim();
+    const inputBlue = document.getElementById('input-blue').value.trim();
+    const errorMsg = document.getElementById('error-msg');
+
+    const error = validateInput(inputRed, inputBlue);
+    if (error) {
+        errorMsg.innerText = error;
+        errorMsg.style.opacity = 1;
+        return;
+    }
+
+    redWords = inputRed;
+    blueWords = inputBlue;
+    currentRound = 0;
+    scores = { red: 0, blue: 0 };
+    updateScoreboard();
+
+    // 路由切换：淡出A，淡入B
+    document.getElementById('screen-a').style.opacity = 0;
+    setTimeout(() => {
+        document.getElementById('screen-a').style.display = 'none';
+        document.getElementById('screen-b').style.display = 'block';
+        setTimeout(() => document.getElementById('screen-b').style.opacity = 1, 50);
+        
+        init3DPhysics();
+        startNextRound();
+    }, 800);
+}
+
+function updateScoreboard() {
+    document.getElementById('score-red').innerText = scores.red;
+    document.getElementById('score-blue').innerText = scores.blue;
+}
+
+// ================= 3D 引擎与物理世界初始化 =================
+function init3DPhysics() {
+    const container = document.getElementById('canvas-container');
+    container.innerHTML = ""; // 清空旧画布
+
+    // 1. Three.js 初始化
+    scene = new THREE.Scene();
+    // 侧上方透视相机 (45~60度角)
+    camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.set(0, 25, 30);
+    camera.lookAt(0, 0, 0);
+
+    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    container.appendChild(renderer.domElement);
+
+    // 灯光
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+    scene.add(ambientLight);
+    const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    dirLight.position.set(10, 20, 10);
+    dirLight.castShadow = true;
+    scene.add(dirLight);
+
+    // 2. Cannon.js 初始化
+    world = new CANNON.World();
+    world.gravity.set(0, -30, 0); // 加大重力让掉落更有力
+    world.broadphase = new CANNON.NaiveBroadphase();
+    world.solver.iterations = 20;
+
+    // 材质与碰撞规则
+    arenaMaterial = new CANNON.Material('arena');
+    topMaterial = new CANNON.Material('top');
+    contactMaterial = new CANNON.ContactMaterial(arenaMaterial, topMaterial, {
+        friction: PHYSICS_CONFIG.friction,
+        restitution: PHYSICS_CONFIG.restitution // 低恢复系数
+    });
+    const topTopContact = new CANNON.ContactMaterial(topMaterial, topMaterial, {
+        friction: PHYSICS_CONFIG.friction,
+        restitution: PHYSICS_CONFIG.restitution
+    });
+    world.addContactMaterial(contactMaterial);
+    world.addContactMaterial(topTopContact);
+
+    // 3. 构建战斗盆地 (视觉 + 物理)
+    createBasin();
+
+    // 响应式
+    window.addEventListener('resize', onWindowResize, false);
+    
+    // 启动主循环
+    clock.start();
+    animate();
+}
+
+function createBasin() {
+    // 视觉：浅色极简圆盘
+    const basinGeo = new THREE.CylinderGeometry(15, 15, 1, 64);
+    const basinMat = new THREE.MeshStandardMaterial({ 
+        color: 0xEEEEEE, roughness: 0.8, metalness: 0.1 
+    });
+    const basinMesh = new THREE.Mesh(basinGeo, basinMat);
+    basinMesh.position.y = -0.5;
+    basinMesh.receiveShadow = true;
+    scene.add(basinMesh);
+
+    // 物理：静态地基
+    const basinShape = new CANNON.Cylinder(15, 15, 1, 32);
+    const basinBody = new CANNON.Body({ mass: 0, material: arenaMaterial });
+    basinBody.addShape(basinShape);
+    basinBody.position.set(0, -0.5, 0);
+    // CannonJS Cylinder 默认沿Z轴，需旋转至Y轴
+    basinBody.quaternion.setFromAxisAngle(new CANNON.Vec3(1,0,0), -Math.PI/2);
+    world.addBody(basinBody);
+    
+    // 隐形护栏防止飞出
+    const wallShape = new CANNON.Cylinder(16, 16, 10, 32);
+    // 使用仅碰撞内部的技巧，或简单用向心力约束（这里依赖向心力逻辑）
+}
+
+// ================= 核心：基于体素的汉字3D化 (无需外部字体文件) =================
+// 将汉字渲染在2D画布上，分析像素生成体素积木，自然支持质量计算与掉渣特效。
+function createVoxelText(char, colorHex, startPos) {
+    const size = 16; // 网格分辨率 (16x16)
+    const canvas = document.createElement('canvas');
+    canvas.width = size; canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = 'black';
+    ctx.fillRect(0, 0, size, size);
+    ctx.fillStyle = 'white';
+    ctx.font = `bold ${size * 0.8}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(char, size/2, size/2);
+
+    const imgData = ctx.getImageData(0, 0, size, size).data;
+    
+    const voxelSize = 0.3; // 单立体素大小
+    const geometry = new THREE.BoxGeometry(voxelSize, voxelSize * 2, voxelSize); // 略微挤压厚度
+    const material = new THREE.MeshStandardMaterial({ color: colorHex, roughness: 0.4 });
+    
+    const group = new THREE.Group();
+    let voxelCount = 0;
+
+    // 构建一个 Cannon 的复合碰撞体
+    const body = new CANNON.Body({
+        mass: 1, // 暂定，后修正
+        material: topMaterial
+    });
+
+    const boxShape = new CANNON.Box(new CANNON.Vec3(voxelSize/2, voxelSize, voxelSize/2));
+
+    for (let y = 0; y < size; y++) {
+        for (let x = 0; x < size; x++) {
+            const idx = (y * size + x) * 4;
+            const r = imgData[idx]; // 黑色底，白色字。取R通道判断
+            if (r > 128) {
+                // 像素中心化偏移
+                const px = (x - size/2) * voxelSize;
+                const pz = (y - size/2) * voxelSize; // 将2D的Y映射到3D的Z
+                
+                const mesh = new THREE.Mesh(geometry, material);
+                mesh.position.set(px, 0, pz);
+                mesh.castShadow = true;
+                group.add(mesh);
+                
+                body.addShape(boxShape, new CANNON.Vec3(px, 0, pz));
+                voxelCount++;
+            }
+        }
+    }
+
+    // 1. 体积质量映射：按有效像素数量计算质量
+    body.mass = voxelCount * 0.1;
+    body.updateMassProperties();
+    body.position.copy(startPos);
+    
+    // 初始化为 Kinematic，用于播放掉落动画
+    body.type = CANNON.Body.KINEMATIC;
+
+    // 自定义属性
+    body.gameData = {
+        team: colorHex === 0xD32F2F ? 'red' : 'blue',
+        char: char,
+        state: 'DROPPING', // DROPPING -> SPINNING -> DEAD
+        dropStartY: startPos.y,
+        timeAlive: 0,
+        meshGroup: group
+    };
+
+    // 碰撞碎裂监听
+    body.addEventListener("collide", handleCollision);
+
+    scene.add(group);
+    world.addBody(body);
+
+    return body;
+}
+
+// ================= 对战流程控制 =================
+function startNextRound() {
+    if (currentRound >= redWords.length) {
+        endGame();
+        return;
+    }
+
+    // UI 指示器更新
+    document.getElementById('char-red').innerHTML = redWords.split('').map((c, i) => 
+        `<span class="current-char red ${i===currentRound?'active':''}">${c}</span>`
+    ).join('');
+    document.getElementById('char-blue').innerHTML = blueWords.split('').map((c, i) => 
+        `<span class="current-char blue ${i===currentRound?'active':''}">${c}</span>`
+    ).join('');
+
+    clearArena();
+
+    const charR = redWords[currentRound];
+    const charB = blueWords[currentRound];
+
+    // 生成双方陀螺，高空初始位置
+    const topR = createVoxelText(charR, 0xD32F2F, new CANNON.Vec3(-5, PHYSICS_CONFIG.drop_height, 0));
+    const topB = createVoxelText(charB, 0x1976D2, new CANNON.Vec3(5, PHYSICS_CONFIG.drop_height, 0));
+
+    activeTops = [topR, topB];
+    isRoundActive = true;
+}
+
+function clearArena() {
+    activeTops.forEach(t => {
+        scene.remove(t.gameData.meshGroup);
+        world.removeBody(t);
+    });
+    debrisBodies.forEach(d => {
+        scene.remove(d.mesh);
+        world.removeBody(d.body);
+    });
+    activeTops = [];
+    debrisBodies = [];
+}
+
+// ================= 物理模拟与数学衰减逻辑 (每帧执行) =================
+function animate() {
+    animationId = requestAnimationFrame(animate);
+    
+    const dt = clock.getDelta();
+    world.step(1/60, dt, 3);
+
+    // 盆地中心吸引力 (引力井)
+    const center = new CANNON.Vec3(0,0,0);
+
+    activeTops.forEach(top => {
+        // 1. 入场动画 (自由落体过场)
+        if (top.gameData.state === 'DROPPING') {
+            top.position.y -= 15 * dt; // 匀速或加速下降
+            if (top.position.y <= 1.0) {
+                // 触底，转换为真实动态物理实体
+                top.position.y = 1.0;
+                top.type = CANNON.Body.DYNAMIC;
+                top.gameData.state = 'SPINNING';
+                top.gameData.timeAlive = 0;
+                // 赋予初始角速度
+                top.angularVelocity.set(0, PHYSICS_CONFIG.omega_0, 0);
+                // 给予微小的初始向心速度
+                const dir = (top.position.x > 0) ? -2 : 2;
+                top.velocity.set(dir, 0, 0);
+            }
+        } 
+        // 2. 衰减函数与平移耦合 (战斗阶段)
+        else if (top.gameData.state === 'SPINNING') {
+            top.gameData.timeAlive += dt;
+            const t = top.gameData.timeAlive;
+            
+            // 计算当前理论最大角速度 w_max
+            let w_max = 0;
+            if (t < PHYSICS_CONFIG.T_max) {
+                const ratio = t / PHYSICS_CONFIG.T_max;
+                w_max = PHYSICS_CONFIG.omega_0 * (1 - Math.pow(ratio, PHYSICS_CONFIG.k_decay));
+            }
+
+            // 强制阻尼：如果当前物理转速高于衰减曲线，则压制它
+            const currentW = top.angularVelocity.y;
+            if (Math.abs(currentW) > w_max) {
+                top.angularVelocity.y = Math.sign(currentW) * w_max;
+            }
+
+            // 平移速度耦合：转速越低，平移越慢 (增加线性阻尼)
+            const speedRatio = Math.abs(currentW) / PHYSICS_CONFIG.omega_0;
+            top.velocity.scale(0.95 + 0.04 * speedRatio, top.velocity);
+
+            // 施加向心吸引力，防止陀螺散开
+            let dir = new CANNON.Vec3();
+            top.position.vsub(center, dir);
+            dir.y = 0;
+            const dist = dir.length();
+            if (dist > 1) {
+                dir.normalize();
+                dir.scale(-PHYSICS_CONFIG.basin_attraction, dir);
+                top.applyForce(dir, top.position);
+            }
+
+            // 胜负判定：角速度趋近于0
+            if (Math.abs(top.angularVelocity.y) < 0.2 && t > 2) {
+                top.gameData.state = 'DEAD';
+                checkRoundWinner();
+            }
+        }
+
+        // 视觉同步
+        top.gameData.meshGroup.position.copy(top.position);
+        top.gameData.meshGroup.quaternion.copy(top.quaternion);
+    });
+
+    // 碎渣视觉同步
+    debrisBodies.forEach(d => {
+        d.mesh.position.copy(d.body.position);
+        d.mesh.quaternion.copy(d.body.quaternion);
+    });
+
+    renderer.render(scene, camera);
+}
+
+// ================= 碎裂机制与碰撞事件 =================
+function handleCollision(e) {
+    if (!isRoundActive) return;
+    const contact = e.contact;
+    const body = e.body; // 发生碰撞的另一方
+    
+    // 计算碰撞冲量 (相对速度)
+    const v1 = this.velocity;
+    const v2 = body.velocity;
+    const relativeV = new CANNON.Vec3();
+    v1.vsub(v2, relativeV);
+    const impact = relativeV.length();
+
+    if (impact > PHYSICS_CONFIG.impulse_threshold) {
+        // 生成火花特效 (简易实现，屏幕闪烁或添加临时点精灵)
+        // 动态概率模型: P(break) = 0.4 * (w / w_max)
+        const currentW = Math.abs(this.angularVelocity.y);
+        const wRatio = currentW / PHYSICS_CONFIG.omega_0;
+        const pBreak = PHYSICS_CONFIG.break_prob_base * wRatio;
+
+        if (Math.random() < pBreak) {
+            triggerFragmentation(this);
+        }
+    }
+}
+
+function triggerFragmentation(topBody) {
+    // 不对称碎裂 (掉渣特效)：
+    // 从主 Group 中移除 1~3 个外围 Voxel Mesh，并生成独立的受重力影响的微小块。
+    const group = topBody.gameData.meshGroup;
+    const children = group.children;
+    if (children.length < 5) return; // 太小不碎了
+
+    const dropCount = Math.floor(Math.random() * 3) + 1; // 偏态，大概率掉少部分
+    
+    for (let i = 0; i < dropCount; i++) {
+        // 随机选一个 (最好是边缘，这里简化为随机)
+        const idx = Math.floor(Math.random() * children.length);
+        const child = children[idx];
+        if (!child) continue;
+
+        group.remove(child);
+        
+        // 创建独立物理碎片
+        const debrisShape = new CANNON.Box(new CANNON.Vec3(0.15, 0.3, 0.15));
+        const debrisBody = new CANNON.Body({ mass: 0.05, material: topMaterial });
+        debrisBody.addShape(debrisShape);
+        
+        // 计算世界坐标
+        const worldPos = new THREE.Vector3();
+        child.getWorldPosition(worldPos);
+        debrisBody.position.copy(worldPos);
+        
+        // 赋予随机飞溅速度
+        debrisBody.velocity.set(
+            (Math.random()-0.5)*10, 
+            Math.random()*10, 
+            (Math.random()-0.5)*10
+        );
+        
+        world.addBody(debrisBody);
+        scene.add(child); // 放回全局 scene
+        
+        debrisBodies.push({ mesh: child, body: debrisBody });
+        
+        // 减少主体质量
+        topBody.mass -= 0.05;
+        topBody.updateMassProperties();
+    }
+}
+
+// ================= 胜负结算与特效 =================
+function checkRoundWinner() {
+    if (!isRoundActive) return;
+    
+    const deadTops = activeTops.filter(t => t.gameData.state === 'DEAD');
+    if (deadTops.length > 0) {
+        isRoundActive = false;
+        let winnerTeam = '';
+        
+        if (deadTops.length === 2) {
+            // 平局
+        } else {
+            const loser = deadTops[0];
+            winnerTeam = loser.gameData.team === 'red' ? 'blue' : 'red';
+            scores[winnerTeam]++;
+            
+            // 单局庆祝 (小型纸片)
+            triggerConfetti(winnerTeam, false);
+        }
+
+        updateScoreboard();
+        currentRound++;
+        
+        setTimeout(startNextRound, 2500); // 延迟进入下一字
+    }
+}
+
+function endGame() {
+    let finalWinner = 'red';
+    if (scores.blue > scores.red) finalWinner = 'blue';
+    else if (scores.blue === scores.red) finalWinner = 'tie';
+
+    if (finalWinner !== 'tie') {
+        triggerConfetti(finalWinner, true);
+    }
+    
+    setTimeout(() => {
+        alert(finalWinner === 'tie' ? "平局！" : (finalWinner === 'red' ? "红队获胜！" : "蓝队获胜！"));
+        location.reload(); // 重置游戏
+    }, 3000);
+}
+
+function triggerConfetti(team, isFullScreen) {
+    const color = team === 'red' ? '#D32F2F' : '#1976D2';
+    
+    if (isFullScreen) {
+        // 终局狂欢
+        const duration = 3000;
+        const end = Date.now() + duration;
+        (function frame() {
+            confetti({ particleCount: 5, angle: 60, spread: 55, origin: { x: 0 }, colors: [color, '#ffffff'] });
+            confetti({ particleCount: 5, angle: 120, spread: 55, origin: { x: 1 }, colors: [color, '#ffffff'] });
+            if (Date.now() < end) requestAnimationFrame(frame);
+        }());
+    } else {
+        // 单局小型礼花 (靠胜利方一侧)
+        const xPos = team === 'red' ? 0.3 : 0.7;
+        confetti({
+            particleCount: 50, spread: 60, origin: { y: 0.2, x: xPos },
+            colors: [color, '#ffffff'], zIndex: 100
+        });
+    }
+}
+
+function onWindowResize() {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+}
+</script>
+</body>
+</html>

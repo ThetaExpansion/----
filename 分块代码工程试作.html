@@ -1,0 +1,208 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>汉字实体化力学模拟</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Microsoft YaHei", Arial, sans-serif;
+        }
+
+        body {
+            min-height: 100vh;
+            padding: 24px;
+            background: #eef2f7;
+            color: #111827;
+        }
+
+        .container {
+            max-width: 720px;
+            margin: 0 auto;
+        }
+
+        .panel {
+            background: #fff;
+            border-radius: 16px;
+            box-shadow: 0 14px 36px rgba(15, 23, 42, 0.08);
+            padding: 20px 22px;
+        }
+
+        .panel h2 {
+            margin-bottom: 10px;
+            font-size: 22px;
+        }
+
+        .panel p {
+            color: #475569;
+            line-height: 1.7;
+            margin-bottom: 18px;
+        }
+
+        #charInput {
+            width: 240px;
+            padding: 10px 14px;
+            border: 1px solid #cbd5e1;
+            border-radius: 10px;
+            font-size: 16px;
+        }
+
+        #startBtn {
+            margin-left: 12px;
+            padding: 10px 18px;
+            border: none;
+            border-radius: 10px;
+            background: #2563eb;
+            color: white;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        #startBtn:hover {
+            background: #1d4ed8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="panel">
+            <h2>汉字实体化力学模拟</h2>
+            <p>输入 2 到 5 个汉字，点击按钮后会打开一个新页面显示逐字实体化的 3D 展示，并标记最脆弱点。</p>
+            <div>
+                <input id="charInput" type="text" maxlength="5" placeholder="请输入2-5个汉字">
+                <button id="startBtn">开始模拟</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ========== 基础参数配置 ==========
+        const CONFIG = {
+            DENSITY_PER_STROKE: 0.9,
+            BASE_SPEED_COEFF: 120,
+            MAX_BREAK_RADIUS: 46,
+            CENTER_RADIUS: 24
+        };
+
+        const STROKE_DATABASE = {
+            一: 1, 二: 2, 三: 3, 十: 2, 人: 2, 大: 3, 天: 4,
+            木: 4, 水: 4, 火: 4, 山: 3, 石: 5, 田: 5, 白: 5,
+            心: 4, 月: 4, 日: 4, 子: 3, 力: 2
+        };
+
+        const inputDom = document.getElementById('charInput');
+        const btnDom = document.getElementById('startBtn');
+
+        function calcCharMass(char) {
+            const strokes = STROKE_DATABASE[char] ?? 6;
+            return strokes * CONFIG.DENSITY_PER_STROKE;
+        }
+
+        function calcSpeedByMass(mass) {
+            return CONFIG.BASE_SPEED_COEFF / mass;
+        }
+
+        function simulateWeakPoint(totalStroke) {
+            const nodes = totalStroke * 6;
+            let best = { score: -1, radius: 0, angle: 0 };
+
+            for (let i = 0; i < nodes; i++) {
+                const radius = Math.random() * CONFIG.MAX_BREAK_RADIUS;
+                const angle = Math.random() * Math.PI * 2;
+                const proximity = 1 - radius / CONFIG.MAX_BREAK_RADIUS;
+                const fragility = proximity * 0.9 + Math.random() * 0.12;
+
+                if (fragility > best.score) {
+                    best = { score: fragility, radius, angle };
+                }
+            }
+
+            return {
+                breakRadius: best.radius,
+                breakAngle: best.angle,
+                fragilityScore: Math.round(best.score * 100),
+                isNearCenter: best.radius <= CONFIG.CENTER_RADIUS
+            };
+        }
+
+        btnDom.addEventListener('click', () => {
+            const text = inputDom.value.trim();
+            if (text.length < 2 || text.length > 5) {
+                alert('请输入 2 到 5 个汉字。');
+                return;
+            }
+
+            const newWin = window.open('', '_blank');
+            if (!newWin) {
+                alert('请允许弹出新窗口。');
+                return;
+            }
+
+            let pageHtml = `<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>实体化结果</title>
+<style>
+body { margin: 0; min-height: 100vh; font-family: "Microsoft YaHei", Arial, sans-serif; background: #eef2f7; color: #111827; }
+.page { padding: 24px; max-width: 900px; margin: 0 auto; }
+.header { margin-bottom: 18px; }
+.header h1 { margin-bottom: 8px; font-size: 24px; }
+.header p { color: #475569; line-height: 1.7; }
+.card { background: #fff; border-radius: 18px; box-shadow: 0 18px 36px rgba(15, 23, 42, 0.08); padding: 20px; margin-bottom: 22px; }
+.preview { width: 260px; height: 260px; margin: 0 auto 18px; position: relative; perspective: 900px; }
+.char-box { position: relative; width: 100%; height: 100%; border-radius: 24px; background: linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%); display: flex; align-items: center; justify-content: center; transform-style: preserve-3d; transform: rotateX(18deg) rotateY(-18deg); box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.18); }
+.char-box::before { content: ''; position: absolute; inset: 0; border-radius: 24px; background: radial-gradient(circle at 50% 22%, rgba(255,255,255,0.92), transparent 38%); }
+.char-text { position: relative; font-size: 110px; font-weight: 800; color: #0f172a; text-shadow: 0 10px 20px rgba(15, 23, 42, 0.22), 0 24px 56px rgba(15, 23, 42, 0.12); transform: translateZ(36px); }
+.pedestal { position: absolute; left: 50%; bottom: 10px; width: 170px; height: 22px; background: #334155; border-radius: 14px; transform: translateX(-50%) rotateX(72deg); box-shadow: 0 12px 28px rgba(15, 23, 42, 0.2); }
+.break-dot { position: absolute; width: 16px; height: 16px; border: 3px solid #ef4444; background: rgba(255,255,255,0.9); border-radius: 50%; transform: translate(-50%, -50%); }
+.info { font-size: 15px; line-height: 1.75; color: #334155; }
+.info strong { color: #0f172a; }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="header">
+    <h1>实体化结果展示</h1>
+    <p>每个汉字显示实体化后的 3D 展示，以及它的质量、速度、脆弱位置和脆弱值。</p>
+  </div>
+`;
+
+            for (const char of text) {
+                const strokeCount = STROKE_DATABASE[char] ?? 6;
+                const mass = calcCharMass(char);
+                const speed = calcSpeedByMass(mass);
+                const weak = simulateWeakPoint(strokeCount);
+                const x = 130 + Math.cos(weak.breakAngle) * weak.breakRadius;
+                const y = 130 + Math.sin(weak.breakAngle) * weak.breakRadius;
+
+                pageHtml += `<section class="card">
+    <div class="preview">
+      <div class="char-box">
+        <div class="char-text">${char}</div>
+        <div class="break-dot" style="left:${x}px; top:${y}px;"></div>
+      </div>
+      <div class="pedestal"></div>
+    </div>
+    <div class="info">
+      <p><strong>汉字：</strong>${char}</p>
+      <p><strong>笔画数：</strong>${strokeCount} 画</p>
+      <p><strong>实体质量：</strong>${mass.toFixed(2)} 克</p>
+      <p><strong>速度（质量反比）：</strong>${speed.toFixed(2)}</p>
+      <p><strong>脆弱位置：</strong>${weak.isNearCenter ? '靠近中心区域' : '靠近外侧区域'}</p>
+      <p><strong>脆弱值：</strong>${weak.fragilityScore}</p>
+    </div>
+  </section>`;
+            }
+
+            pageHtml += `</div></body></html>`;
+            newWin.document.write(pageHtml);
+            newWin.document.close();
+        });
+    </script>
+</body>
+</html>

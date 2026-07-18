@@ -1,0 +1,1178 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>汉字陀螺大战 - Word Spin Battle</title>
+    <style>
+        :root {
+            --bg-color: #FAFAFA;
+            --text-color: #2c2c2c;
+            --red-team: #C62828;
+            --blue-team: #1565C0;
+            --border-color: #E0E0E0;
+            --gold: #B8860B;
+            --font-family: -apple-system, BlinkMacSystemFont, "Noto Serif SC", "Songti SC", "PingFang SC", serif;
+        }
+
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: var(--font-family);
+            overflow: hidden;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        /* ===== 界面A：输入准备阶段 ===== */
+        #screen-a {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            width: 100vw;
+            transition: opacity 0.7s cubic-bezier(0.4, 0, 0.2, 1), transform 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 10;
+            background: var(--bg-color);
+        }
+        #screen-a.fade-out {
+            opacity: 0;
+            transform: scale(1.04);
+            pointer-events: none;
+        }
+
+        .title {
+            font-size: clamp(1.8rem, 4vw, 2.8rem);
+            font-weight: 300;
+            margin-bottom: 2.5rem;
+            letter-spacing: 3px;
+            text-align: center;
+        }
+        .subtitle {
+            font-size: 0.85rem;
+            color: #999;
+            margin-bottom: 2rem;
+            letter-spacing: 1px;
+            font-weight: 300;
+        }
+
+        .input-container {
+            display: flex;
+            gap: clamp(1.5rem, 5vw, 4rem);
+            margin-bottom: 2.5rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .team-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.6rem;
+        }
+        .team-label {
+            font-size: 1rem;
+            font-weight: 500;
+            letter-spacing: 1px;
+        }
+        .team-label.red {
+            color: var(--red-team);
+        }
+        .team-label.blue {
+            color: var(--blue-team);
+        }
+
+        input[type="text"] {
+            font-size: 1.8rem;
+            padding: 0.6rem 0.4rem;
+            width: 140px;
+            text-align: center;
+            border: 1.5px solid var(--border-color);
+            border-radius: 12px;
+            background: transparent;
+            outline: none;
+            transition: border-color 0.3s, box-shadow 0.3s;
+            font-family: var(--font-family);
+            letter-spacing: 2px;
+        }
+        input[type="text"]:focus {
+            border-color: #888;
+            box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.04);
+        }
+        input[type="text"].error-shake {
+            animation: shake 0.5s ease;
+            border-color: #e57373;
+        }
+
+        @keyframes shake {
+            0%,
+            100% {
+                transform: translateX(0);
+            }
+            20% {
+                transform: translateX(-6px);
+            }
+            40% {
+                transform: translateX(6px);
+            }
+            60% {
+                transform: translateX(-4px);
+            }
+            80% {
+                transform: translateX(4px);
+            }
+        }
+
+        .error-msg {
+            color: #c62828;
+            height: 22px;
+            font-size: 0.85rem;
+            margin-bottom: 1.2rem;
+            opacity: 0;
+            transition: opacity 0.35s;
+            letter-spacing: 0.5px;
+        }
+        .error-msg.visible {
+            opacity: 1;
+        }
+
+        button {
+            padding: 13px 44px;
+            font-size: 1.1rem;
+            font-weight: 400;
+            background-color: var(--text-color);
+            color: #fff;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: transform 0.25s, box-shadow 0.25s, background-color 0.25s;
+            font-family: var(--font-family);
+            letter-spacing: 1px;
+            -webkit-tap-highlight-color: transparent;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.13);
+        }
+        button:active {
+            transform: scale(0.96);
+            background-color: #444;
+        }
+
+        /* ===== 界面B：战斗阶段 ===== */
+        #screen-b {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            display: none;
+            opacity: 0;
+            z-index: 5;
+            transition: opacity 0.6s ease;
+        }
+        #screen-b.visible {
+            display: block;
+            opacity: 1;
+        }
+
+        .scoreboard {
+            position: absolute;
+            top: 18px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 2.5rem;
+            align-items: center;
+            background: rgba(250, 250, 250, 0.92);
+            padding: 10px 28px;
+            border-radius: 40px;
+            box-shadow: 0 2px 14px rgba(0, 0, 0, 0.06);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            z-index: 20;
+        }
+        .score {
+            font-size: 2rem;
+            font-weight: 700;
+            transition: transform 0.3s;
+        }
+        .score.red {
+            color: var(--red-team);
+        }
+        .score.blue {
+            color: var(--blue-team);
+        }
+        .score.pulse {
+            animation: scorePulse 0.5s ease;
+        }
+        @keyframes scorePulse {
+            0%,
+            100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.35);
+            }
+        }
+        .vs {
+            font-size: 1rem;
+            color: #aaa;
+            font-weight: 400;
+            letter-spacing: 1px;
+        }
+
+        .char-indicator {
+            position: absolute;
+            top: 85px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 4rem;
+            font-size: 2.2rem;
+            z-index: 20;
+        }
+        .current-char {
+            opacity: 0.25;
+            transition: opacity 0.4s, transform 0.4s, text-shadow 0.4s;
+            font-weight: 500;
+        }
+        .current-char.active {
+            opacity: 1;
+            transform: scale(1.15);
+        }
+        .current-char.red.active {
+            color: var(--red-team);
+            text-shadow: 0 0 18px rgba(198, 40, 40, 0.35);
+        }
+        .current-char.blue.active {
+            color: var(--blue-team);
+            text-shadow: 0 0 18px rgba(21, 101, 192, 0.35);
+        }
+
+        /* 底部提示 */
+        .hint-bar {
+            position: absolute;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.8rem;
+            color: #bbb;
+            letter-spacing: 1px;
+            z-index: 20;
+            transition: opacity 0.5s;
+        }
+
+        #canvas-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 1;
+        }
+
+        /* ===== 界面C：结果展示 ===== */
+        #screen-c {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 30;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: rgba(30, 30, 30, 0.55);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            opacity: 0;
+            transition: opacity 0.6s ease;
+        }
+        #screen-c.visible {
+            display: flex;
+            opacity: 1;
+        }
+
+        .result-card {
+            background: #fff;
+            border-radius: 24px;
+            padding: 2.5rem 2rem 2rem;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+            max-width: 420px;
+            width: 85%;
+            animation: cardIn 0.6s cubic-bezier(0.22, 0.61, 0.36, 1);
+        }
+        @keyframes cardIn {
+            from {
+                transform: translateY(40px) scale(0.9);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0) scale(1);
+                opacity: 1;
+            }
+        }
+        .result-icon {
+            font-size: 3.5rem;
+            margin-bottom: 0.8rem;
+        }
+        .result-title {
+            font-size: 1.6rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+            margin-bottom: 1.2rem;
+        }
+        .result-title.red-win {
+            color: var(--red-team);
+        }
+        .result-title.blue-win {
+            color: var(--blue-team);
+        }
+        .result-title.tie {
+            color: #666;
+        }
+        .result-scores {
+            display: flex;
+            justify-content: center;
+            gap: 2.5rem;
+            margin-bottom: 1.8rem;
+            font-size: 1.1rem;
+        }
+        .result-scores .rs {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.3rem;
+        }
+        .result-scores .rs .big {
+            font-size: 2.8rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+        }
+        .result-scores .rs.red .big {
+            color: var(--red-team);
+        }
+        .result-scores .rs.blue .big {
+            color: var(--blue-team);
+        }
+        .result-scores .rs .label {
+            font-size: 0.8rem;
+            color: #999;
+            letter-spacing: 1px;
+        }
+        .result-detail {
+            font-size: 0.85rem;
+            color: #777;
+            margin-bottom: 1.8rem;
+            line-height: 1.6;
+        }
+        .btn-restart {
+            padding: 12px 36px;
+            font-size: 1rem;
+            font-weight: 400;
+            background: var(--text-color);
+            color: #fff;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            letter-spacing: 1px;
+            transition: transform 0.25s, box-shadow 0.25s;
+            font-family: var(--font-family);
+        }
+        .btn-restart:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js">
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cannon.js/0.6.2/cannon.min.js">
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js">
+    </script>
+</head>
+<body>
+
+    <!-- 界面A：输入准备 -->
+    <div id="screen-a">
+        <div class="title">汉字陀螺大战</div>
+        <div class="subtitle">输入双方汉字 · 等字对决</div>
+        <div class="input-container">
+            <div class="team-box">
+                <div class="team-label red">🔴 红队</div>
+                <input type="text" id="input-red" placeholder="2~5汉字" maxlength="5" autocomplete="off">
+            </div>
+            <div class="team-box">
+                <div class="team-label blue">🔵 蓝队</div>
+                <input type="text" id="input-blue" placeholder="2~5汉字" maxlength="5" autocomplete="off">
+            </div>
+        </div>
+        <div class="error-msg" id="error-msg"></div>
+        <button onclick="startGame()">⚔️ 开始对决</button>
+    </div>
+
+    <!-- 界面B：战斗画面 -->
+    <div id="screen-b">
+        <div class="scoreboard">
+            <div class="score red" id="score-red">0</div>
+            <div class="vs">VS</div>
+            <div class="score blue" id="score-blue">0</div>
+        </div>
+        <div class="char-indicator">
+            <div class="current-char red" id="char-red"></div>
+            <div class="current-char blue" id="char-blue"></div>
+        </div>
+        <div class="hint-bar" id="hint-bar">陀螺掉落中…</div>
+    </div>
+
+    <!-- 界面C：结果展示 -->
+    <div id="screen-c">
+        <div class="result-card" id="result-card">
+            <div class="result-icon" id="result-icon"></div>
+            <div class="result-title" id="result-title"></div>
+            <div class="result-scores">
+                <div class="rs red">
+                    <span class="big" id="result-score-red">0</span>
+                    <span class="label">红队</span>
+                </div>
+                <div class="rs blue">
+                    <span class="big" id="result-score-blue">0</span>
+                    <span class="label">蓝队</span>
+                </div>
+            </div>
+            <div class="result-detail" id="result-detail"></div>
+            <button class="btn-restart" onclick="location.reload()">🔄 再来一局</button>
+        </div>
+    </div>
+
+    <div id="canvas-container"></div>
+
+    <script>
+        /**
+         * ==========================================
+         *  物理与数学参数配置区 (可独立调参)
+         * ==========================================
+         */
+        const PHYSICS_CONFIG = {
+            omega_0: 45, // 初始角速度 (rad/s) — 大幅提升
+            T_max: 90, // 陀螺理论最大旋转寿命 (秒) — 延长
+            k_decay: 1.05, // 角速度衰减非线性指数 (接近线性，衰减极慢)
+            restitution: 0.12, // 碰撞恢复系数 (很低，避免弹飞)
+            friction: 0.35, // 物理接触摩擦力
+            basin_attraction: 14.0, // 盆地中心向心力系数 — 大幅增强
+            break_prob_base: 0.45, // 基础最大碎裂概率
+            impulse_threshold: 6.0, // 触发碎裂计算的最小碰撞冲量 — 降低阈值
+            drop_height: 16, // 初始空投高度
+            voxel_mass_factor: 0.65, // 体素质量系数 — 大幅提升
+            angular_damping: 0.004, // 旋转阻尼 — 极低
+            linear_damping: 0.04, // 线性阻尼 — 较低
+            initial_center_speed: 6.5, // 触底后向中心初速度
+            debris_lifetime: 4.0, // 碎片最大存活时间(秒)
+            max_debris: 60, // 最大碎片数量
+        };
+
+        let redWords = "";
+        let blueWords = "";
+        let currentRound = 0;
+        let scores = { red: 0, blue: 0 };
+
+        let scene, camera, renderer, world;
+        let arenaMaterial, topMaterial, contactMaterial;
+        let activeTops = [];
+        let debrisBodies = [];
+        let animationId;
+        let clock = new THREE.Clock();
+        let isRoundActive = false;
+        let roundTimer = 0;
+        let collisionCooldown = 0; // 碰撞冷却，防止同一帧多次触发
+        let processedCollisionPairs = new Set();
+
+        // ================= UI 与路由逻辑 =================
+        function validateInput(r, b) {
+            const zhRegex = /^[\u4e00-\u9fa5]{2,5}$/;
+            if (!zhRegex.test(r) || !zhRegex.test(b)) return "必须输入2~5个纯汉字";
+            if (r.length !== b.length) return "红蓝两队字数必须严格相等";
+            return "";
+        }
+
+        function startGame() {
+            const inputRed = document.getElementById('input-red').value.trim();
+            const inputBlue = document.getElementById('input-blue').value.trim();
+            const errorMsg = document.getElementById('error-msg');
+
+            const error = validateInput(inputRed, inputBlue);
+            if (error) {
+                errorMsg.innerText = error;
+                errorMsg.classList.add('visible');
+                // 抖动输入框
+                document.getElementById('input-red').classList.add('error-shake');
+                document.getElementById('input-blue').classList.add('error-shake');
+                setTimeout(() => {
+                    document.getElementById('input-red').classList.remove('error-shake');
+                    document.getElementById('input-blue').classList.remove('error-shake');
+                }, 500);
+                return;
+            }
+            errorMsg.classList.remove('visible');
+
+            redWords = inputRed;
+            blueWords = inputBlue;
+            currentRound = 0;
+            scores = { red: 0, blue: 0 };
+            updateScoreboard();
+
+            // 路由切换
+            const screenA = document.getElementById('screen-a');
+            screenA.classList.add('fade-out');
+            setTimeout(() => {
+                screenA.style.display = 'none';
+                const screenB = document.getElementById('screen-b');
+                screenB.classList.add('visible');
+                init3DPhysics();
+                startNextRound();
+            }, 700);
+        }
+
+        function updateScoreboard() {
+            document.getElementById('score-red').innerText = scores.red;
+            document.getElementById('score-blue').innerText = scores.blue;
+        }
+
+        function pulseScore(team) {
+            const el = document.getElementById('score-' + team);
+            el.classList.remove('pulse');
+            void el.offsetWidth;
+            el.classList.add('pulse');
+        }
+
+        // ================= 3D 引擎与物理世界初始化 =================
+        function init3DPhysics() {
+            const container = document.getElementById('canvas-container');
+            container.innerHTML = "";
+
+            // Three.js
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0xFAFAFA);
+            scene.fog = new THREE.Fog(0xFAFAFA, 40, 80);
+
+            camera = new THREE.PerspectiveCamera(42, window.innerWidth / window.innerHeight, 0.1, 200);
+            camera.position.set(0, 22, 28);
+            camera.lookAt(0, -1, 0);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            renderer.toneMappingExposure = 1.1;
+            container.appendChild(renderer.domElement);
+
+            // 灯光
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.55);
+            scene.add(ambientLight);
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.9);
+            dirLight.position.set(12, 22, 8);
+            dirLight.castShadow = true;
+            dirLight.shadow.mapSize.width = 1024;
+            dirLight.shadow.mapSize.height = 1024;
+            dirLight.shadow.camera.near = 0.5;
+            dirLight.shadow.camera.far = 80;
+            dirLight.shadow.camera.left = -25;
+            dirLight.shadow.camera.right = 25;
+            dirLight.shadow.camera.top = 25;
+            dirLight.shadow.camera.bottom = -25;
+            dirLight.shadow.bias = -0.0001;
+            scene.add(dirLight);
+
+            const hemiLight = new THREE.HemisphereLight(0xffffff, 0xcccccc, 0.35);
+            scene.add(hemiLight);
+
+            // Cannon.js
+            world = new CANNON.World();
+            world.gravity.set(0, -32, 0);
+            world.broadphase = new CANNON.SAPBroadphase(world);
+            world.solver.iterations = 25;
+            world.defaultContactMaterial.contactEquationStiffness = 1e7;
+            world.defaultContactMaterial.contactEquationRelaxation = 3;
+
+            arenaMaterial = new CANNON.Material('arena');
+            topMaterial = new CANNON.Material('top');
+            contactMaterial = new CANNON.ContactMaterial(arenaMaterial, topMaterial, {
+                friction: PHYSICS_CONFIG.friction,
+                restitution: PHYSICS_CONFIG.restitution,
+            });
+            const topTopContact = new CANNON.ContactMaterial(topMaterial, topMaterial, {
+                friction: PHYSICS_CONFIG.friction,
+                restitution: PHYSICS_CONFIG.restitution,
+            });
+            world.addContactMaterial(contactMaterial);
+            world.addContactMaterial(topTopContact);
+
+            createBasin();
+            createVisualArena();
+
+            window.addEventListener('resize', onWindowResize, false);
+            clock.start();
+            animate();
+        }
+
+        function createBasin() {
+            // 物理盆地
+            const basinShape = new CANNON.Cylinder(14, 14, 1.2, 48);
+            const basinBody = new CANNON.Body({ mass: 0, material: arenaMaterial });
+            basinBody.addShape(basinShape);
+            basinBody.position.set(0, -0.6, 0);
+            basinBody.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), -Math.PI / 2);
+            world.addBody(basinBody);
+
+            // 隐形低矮护栏
+            const wallShape = new CANNON.Cylinder(14.8, 14.8, 0.6, 48);
+            const wallBody = new CANNON.Body({ mass: 0, material: arenaMaterial });
+            wallBody.addShape(wallShape);
+            wallBody.position.set(0, 0.15, 0);
+            wallBody.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), -Math.PI / 2);
+            world.addBody(wallBody);
+        }
+
+        function createVisualArena() {
+            // 视觉盆地圆盘
+            const basinGeo = new THREE.CylinderGeometry(14, 14.5, 0.8, 64);
+            const basinMat = new THREE.MeshStandardMaterial({
+                color: 0xEEEEEE,
+                roughness: 0.7,
+                metalness: 0.08,
+            });
+            const basinMesh = new THREE.Mesh(basinGeo, basinMat);
+            basinMesh.position.y = -0.4;
+            basinMesh.receiveShadow = true;
+            basinMesh.castShadow = true;
+            scene.add(basinMesh);
+
+            // 装饰性外环
+            const ringGeo = new THREE.TorusGeometry(14.3, 0.25, 16, 80);
+            const ringMat = new THREE.MeshStandardMaterial({
+                color: 0xDDDDDD,
+                roughness: 0.5,
+                metalness: 0.3,
+            });
+            const ringMesh = new THREE.Mesh(ringGeo, ringMat);
+            ringMesh.rotation.x = -Math.PI / 2;
+            ringMesh.position.y = 0.05;
+            ringMesh.receiveShadow = true;
+            scene.add(ringMesh);
+
+            // 中心标记点
+            const dotGeo = new THREE.SphereGeometry(0.3, 16, 16);
+            const dotMat = new THREE.MeshStandardMaterial({ color: 0xCCCCCC, roughness: 0.4, metalness: 0.2 });
+            const dotMesh = new THREE.Mesh(dotGeo, dotMat);
+            dotMesh.position.y = 0.02;
+            scene.add(dotMesh);
+        }
+
+        // ================= 体素汉字生成 =================
+        function createVoxelText(char, colorHex, startPos, team) {
+            const size = 18; // 网格分辨率
+            const canvas = document.createElement('canvas');
+            canvas.width = size;
+            canvas.height = size;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(0, 0, size, size);
+            ctx.fillStyle = '#ffffff';
+            ctx.font = `bold ${size * 0.88}px "PingFang SC","Noto Serif SC","Songti SC",sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(char, size / 2, size / 2);
+
+            const imgData = ctx.getImageData(0, 0, size, size).data;
+            const voxelSize = 0.28;
+            const geometry = new THREE.BoxGeometry(voxelSize, voxelSize * 2.2, voxelSize);
+            const material = new THREE.MeshStandardMaterial({
+                color: colorHex,
+                roughness: 0.35,
+                metalness: 0.15,
+            });
+
+            const group = new THREE.Group();
+            let voxelCount = 0;
+            const body = new CANNON.Body({ mass: 1, material: topMaterial });
+            const boxShape = new CANNON.Box(new CANNON.Vec3(voxelSize / 2, voxelSize * 1.1, voxelSize / 2));
+
+            for (let y = 0; y < size; y++) {
+                for (let x = 0; x < size; x++) {
+                    const idx = (y * size + x) * 4;
+                    const r = imgData[idx];
+                    if (r > 128) {
+                        const px = (x - size / 2) * voxelSize;
+                        const pz = (y - size / 2) * voxelSize;
+                        const mesh = new THREE.Mesh(geometry, material.clone());
+                        mesh.position.set(px, 0, pz);
+                        mesh.castShadow = true;
+                        mesh.receiveShadow = true;
+                        group.add(mesh);
+                        body.addShape(boxShape, new CANNON.Vec3(px, 0, pz));
+                        voxelCount++;
+                    }
+                }
+            }
+
+            // 质量基于体素复杂度
+            const mass = Math.max(voxelCount * PHYSICS_CONFIG.voxel_mass_factor, 2.5);
+            body.mass = mass;
+            body.updateMassProperties();
+            body.position.copy(startPos);
+            body.type = CANNON.Body.KINEMATIC;
+            body.angularDamping = PHYSICS_CONFIG.angular_damping;
+            body.linearDamping = PHYSICS_CONFIG.linear_damping;
+
+            body.gameData = {
+                team: team,
+                char: char,
+                state: 'DROPPING',
+                dropStartY: startPos.y,
+                timeAlive: 0,
+                meshGroup: group,
+                voxelCount: voxelCount,
+                baseColor: colorHex,
+                collisionStamp: 0,
+            };
+
+            scene.add(group);
+            world.addBody(body);
+            return body;
+        }
+
+        // ================= 对战流程控制 =================
+        function startNextRound() {
+            if (currentRound >= redWords.length) {
+                endGame();
+                return;
+            }
+
+            document.getElementById('char-red').innerHTML = redWords.split('').map((c, i) =>
+                `<span class="current-char red ${i===currentRound?'active':''}">${c}</span>`
+            ).join('');
+            document.getElementById('char-blue').innerHTML = blueWords.split('').map((c, i) =>
+                `<span class="current-char blue ${i===currentRound?'active':''}">${c}</span>`
+            ).join('');
+            document.getElementById('hint-bar').innerText = '陀螺投放中…';
+            document.getElementById('hint-bar').style.opacity = '1';
+
+            clearArena();
+
+            const charR = redWords[currentRound];
+            const charB = blueWords[currentRound];
+
+            const topR = createVoxelText(charR, 0xC62828, new CANNON.Vec3(-5.5, PHYSICS_CONFIG.drop_height, 0), 'red');
+            const topB = createVoxelText(charB, 0x1565C0, new CANNON.Vec3(5.5, PHYSICS_CONFIG.drop_height, 0), 'blue');
+
+            activeTops = [topR, topB];
+            isRoundActive = true;
+            roundTimer = 0;
+            collisionCooldown = 0;
+            processedCollisionPairs.clear();
+        }
+
+        function clearArena() {
+            activeTops.forEach(t => {
+                if (t.gameData && t.gameData.meshGroup) {
+                    scene.remove(t.gameData.meshGroup);
+                }
+                world.removeBody(t);
+            });
+            // 清理碎片
+            for (let i = debrisBodies.length - 1; i >= 0; i--) {
+                const d = debrisBodies[i];
+                if (d.mesh) scene.remove(d.mesh);
+                if (d.body) world.removeBody(d.body);
+            }
+            debrisBodies = [];
+            activeTops = [];
+        }
+
+        // ================= 主循环 =================
+        function animate() {
+            animationId = requestAnimationFrame(animate);
+            const dt = Math.min(clock.getDelta(), 0.1);
+            world.step(1 / 60, dt, 3);
+
+            const center = new CANNON.Vec3(0, 0, 0);
+            collisionCooldown = Math.max(0, collisionCooldown - dt);
+            processedCollisionPairs.clear();
+
+            // 检查碰撞（通过world contacts）
+            if (isRoundActive && collisionCooldown <= 0) {
+                checkCollisionsFromContacts();
+            }
+
+            activeTops.forEach(top => {
+                if (!top.gameData) return;
+
+                // 入场动画
+                if (top.gameData.state === 'DROPPING') {
+                    top.position.y -= 16 * dt;
+                    if (top.position.y <= 1.2) {
+                        top.position.y = 1.2;
+                        top.type = CANNON.Body.DYNAMIC;
+                        top.gameData.state = 'SPINNING';
+                        top.gameData.timeAlive = 0;
+                        top.angularVelocity.set(0, PHYSICS_CONFIG.omega_0, 0);
+                        // 向中心初速度
+                        const sign = top.position.x > 0 ? -1 : 1;
+                        top.velocity.set(sign * PHYSICS_CONFIG.initial_center_speed, 0,
+                            (Math.random() - 0.5) * 3);
+                        document.getElementById('hint-bar').innerText = '⚡ 对决中…';
+                    }
+                }
+                // 旋转衰减与向心力
+                else if (top.gameData.state === 'SPINNING') {
+                    top.gameData.timeAlive += dt;
+                    const t = top.gameData.timeAlive;
+                    let w_max = PHYSICS_CONFIG.omega_0;
+                    if (t < PHYSICS_CONFIG.T_max) {
+                        const ratio = t / PHYSICS_CONFIG.T_max;
+                        w_max = PHYSICS_CONFIG.omega_0 * (1 - Math.pow(ratio, PHYSICS_CONFIG.k_decay));
+                    } else {
+                        w_max = 0;
+                    }
+
+                    const currentW = top.angularVelocity.y;
+                    if (Math.abs(currentW) > w_max && w_max > 0.1) {
+                        top.angularVelocity.y = Math.sign(currentW) * w_max;
+                    }
+
+                    // 向心力：与距离成正比
+                    const dir = new CANNON.Vec3();
+                    top.position.vsub(center, dir);
+                    dir.y = 0;
+                    const dist = dir.length();
+                    if (dist > 0.3) {
+                        dir.normalize();
+                        const forceMag = PHYSICS_CONFIG.basin_attraction * dist;
+                        dir.scale(-forceMag, dir);
+                        top.applyForce(dir, top.position);
+                    }
+
+                    // 边界约束
+                    if (dist > 13.5) {
+                        const boundaryForce = new CANNON.Vec3();
+                        top.position.vsub(center, boundaryForce);
+                        boundaryForce.y = 0;
+                        boundaryForce.normalize();
+                        boundaryForce.scale(-80, boundaryForce);
+                        top.applyForce(boundaryForce, top.position);
+                    }
+
+                    // 停止判定
+                    if (Math.abs(top.angularVelocity.y) < 0.15 && t > 3) {
+                        top.gameData.state = 'DEAD';
+                        checkRoundWinner();
+                    }
+                }
+
+                // 视觉同步
+                if (top.gameData.meshGroup) {
+                    top.gameData.meshGroup.position.copy(top.position);
+                    top.gameData.meshGroup.quaternion.copy(top.quaternion);
+                }
+            });
+
+            // 碎片视觉同步与清理
+            const now = performance.now() / 1000;
+            for (let i = debrisBodies.length - 1; i >= 0; i--) {
+                const d = debrisBodies[i];
+                if (d.mesh && d.body) {
+                    d.mesh.position.copy(d.body.position);
+                    d.mesh.quaternion.copy(d.body.quaternion);
+                    // 清理条件：落地或超时
+                    if (d.body.position.y < -6 || (now - d.birthTime) > PHYSICS_CONFIG.debris_lifetime) {
+                        scene.remove(d.mesh);
+                        world.removeBody(d.body);
+                        debrisBodies.splice(i, 1);
+                    }
+                } else {
+                    debrisBodies.splice(i, 1);
+                }
+            }
+            // 限制碎片总数
+            while (debrisBodies.length > PHYSICS_CONFIG.max_debris) {
+                const d = debrisBodies.shift();
+                if (d.mesh) scene.remove(d.mesh);
+                if (d.body) world.removeBody(d.body);
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        // ================= 碰撞检测（通过world contacts） =================
+        function checkCollisionsFromContacts() {
+            const contacts = world.contacts;
+            for (let i = 0; i < contacts.length; i++) {
+                const contact = contacts[i];
+                const bi = contact.bi;
+                const bj = contact.bj;
+                if (!bi.gameData || !bj.gameData) continue;
+                if (bi.gameData.state !== 'SPINNING' || bj.gameData.state !== 'SPINNING') continue;
+                if (bi.gameData.team === bj.gameData.team) continue;
+
+                const pairKey = bi.id < bj.id ? `${bi.id}_${bj.id}` : `${bj.id}_${bi.id}`;
+                if (processedCollisionPairs.has(pairKey)) continue;
+                processedCollisionPairs.add(pairKey);
+
+                const impactSpeed = contact.getImpactVelocityAlongNormal();
+                if (Math.abs(impactSpeed) > PHYSICS_CONFIG.impulse_threshold) {
+                    // 比较角速度，慢的更容易碎裂
+                    const wA = Math.abs(bi.angularVelocity.y);
+                    const wB = Math.abs(bj.angularVelocity.y);
+                    const wMax = PHYSICS_CONFIG.omega_0;
+
+                    const pA = PHYSICS_CONFIG.break_prob_base * (1 - wA / wMax);
+                    const pB = PHYSICS_CONFIG.break_prob_base * (1 - wB / wMax);
+
+                    const rollA = Math.random();
+                    const rollB = Math.random();
+
+                    if (rollA < Math.max(0.08, pA)) {
+                        triggerFragmentation(bi);
+                    }
+                    if (rollB < Math.max(0.08, pB)) {
+                        triggerFragmentation(bj);
+                    }
+
+                    // 碰撞火花
+                    spawnSparkAt(contact.ri);
+                    collisionCooldown = 0.35;
+                }
+            }
+        }
+
+        function spawnSparkAt(worldPos) {
+            const sparkGeo = new THREE.SphereGeometry(0.08, 6, 6);
+            const sparkMat = new THREE.MeshBasicMaterial({ color: 0xFFD700 });
+            const count = 8;
+            for (let i = 0; i < count; i++) {
+                const spark = new THREE.Mesh(sparkGeo, sparkMat);
+                spark.position.copy(worldPos);
+                spark.position.x += (Math.random() - 0.5) * 2;
+                spark.position.y += (Math.random() - 0.5) * 2;
+                spark.position.z += (Math.random() - 0.5) * 2;
+                spark.userData = {
+                    vel: new THREE.Vector3((Math.random() - 0.5) * 8, Math.random() * 10, (Math.random() - 0.5) * 8),
+                    life: 0.7 + Math.random() * 0.6,
+                    birth: performance.now() / 1000,
+                };
+                scene.add(spark);
+                // 简易粒子动画
+                const animateSpark = () => {
+                    const elapsed = performance.now() / 1000 - spark.userData.birth;
+                    if (elapsed > spark.userData.life) {
+                        scene.remove(spark);
+                        spark.geometry.dispose();
+                        spark.material.dispose();
+                        return;
+                    }
+                    spark.position.x += spark.userData.vel.x * 0.016;
+                    spark.position.y += spark.userData.vel.y * 0.016;
+                    spark.position.z += spark.userData.vel.z * 0.016;
+                    spark.userData.vel.y -= 18 * 0.016;
+                    spark.material.opacity = 1 - elapsed / spark.userData.life;
+                    spark.material.transparent = true;
+                    spark.scale.setScalar(1 - elapsed / spark.userData.life);
+                    requestAnimationFrame(animateSpark);
+                };
+                animateSpark();
+            }
+        }
+
+        // ================= 碎裂机制 =================
+        function triggerFragmentation(topBody) {
+            if (!topBody.gameData || !topBody.gameData.meshGroup) return;
+            const group = topBody.gameData.meshGroup;
+            const children = group.children;
+            if (children.length < 6) return;
+
+            const dropCount = Math.floor(Math.random() * 3) + 1;
+            const indicesToRemove = [];
+            const available = Math.min(children.length, dropCount + 3);
+
+            for (let i = 0; i < dropCount; i++) {
+                const idx = Math.floor(Math.random() * Math.min(children.length, available));
+                if (!indicesToRemove.includes(idx) && idx < children.length) {
+                    indicesToRemove.push(idx);
+                }
+            }
+
+            const removedMeshes = [];
+            indicesToRemove.forEach(idx => {
+                if (idx < children.length) {
+                    const child = children[idx];
+                    const worldPos = new THREE.Vector3();
+                    child.getWorldPosition(worldPos);
+                    group.remove(child);
+                    child.position.copy(worldPos);
+                    scene.add(child);
+                    removedMeshes.push({ mesh: child, worldPos: worldPos });
+                }
+            });
+
+            removedMeshes.forEach(item => {
+                const debrisShape = new CANNON.Box(new CANNON.Vec3(0.14, 0.28, 0.14));
+                const debrisBody = new CANNON.Body({ mass: 0.06, material: topMaterial });
+                debrisBody.addShape(debrisShape);
+                debrisBody.position.copy(item.worldPos);
+                debrisBody.velocity.set(
+                    (Math.random() - 0.5) * 12,
+                    Math.random() * 12 + 2,
+                    (Math.random() - 0.5) * 12
+                );
+                debrisBody.angularVelocity.set(
+                    (Math.random() - 0.5) * 20,
+                    (Math.random() - 0.5) * 20,
+                    (Math.random() - 0.5) * 20
+                );
+                debrisBody.linearDamping = 0.3;
+                debrisBody.angularDamping = 0.4;
+                world.addBody(debrisBody);
+                debrisBodies.push({
+                    mesh: item.mesh,
+                    body: debrisBody,
+                    birthTime: performance.now() / 1000,
+                });
+            });
+
+            // 减少主体质量
+            const massLoss = dropCount * 0.06;
+            topBody.mass = Math.max(topBody.mass - massLoss, 1.5);
+            topBody.updateMassProperties();
+        }
+
+        // ================= 胜负结算 =================
+        function checkRoundWinner() {
+            if (!isRoundActive) return;
+            const deadTops = activeTops.filter(t => t.gameData && t.gameData.state === 'DEAD');
+            if (deadTops.length === 0) return;
+
+            isRoundActive = false;
+            document.getElementById('hint-bar').style.opacity = '0';
+
+            let winnerTeam = null;
+            if (deadTops.length === 1) {
+                const loser = deadTops[0];
+                winnerTeam = loser.gameData.team === 'red' ? 'blue' : 'red';
+                scores[winnerTeam]++;
+                pulseScore(winnerTeam);
+                triggerConfetti(winnerTeam, false);
+            }
+            // 两个都DEAD则平局，都不加分
+
+            updateScoreboard();
+            currentRound++;
+
+            setTimeout(() => {
+                startNextRound();
+            }, 2400);
+        }
+
+        function endGame() {
+            isRoundActive = false;
+            document.getElementById('hint-bar').style.opacity = '0';
+            let finalWinner = 'red';
+            if (scores.blue > scores.red) finalWinner = 'blue';
+            else if (scores.blue === scores.red) finalWinner = 'tie';
+
+            // 显示结果界面
+            const screenC = document.getElementById('screen-c');
+            const icon = document.getElementById('result-icon');
+            const title = document.getElementById('result-title');
+            const detail = document.getElementById('result-detail');
+
+            document.getElementById('result-score-red').innerText = scores.red;
+            document.getElementById('result-score-blue').innerText = scores.blue;
+
+            if (finalWinner === 'tie') {
+                icon.innerText = '🤝';
+                title.innerText = '势均力敌 · 平局';
+                title.className = 'result-title tie';
+                detail.innerText =
+                    `红队「${redWords}」与蓝队「${blueWords}」\n旗鼓相当，难分伯仲！`;
+            } else if (finalWinner === 'red') {
+                icon.innerText = '🏆';
+                title.innerText = '红队获胜！';
+                title.className = 'result-title red-win';
+                detail.innerText =
+                    `红队「${redWords}」以 ${scores.red}:${scores.blue} 战胜蓝队「${blueWords}」\n汉字之力，势不可挡！`;
+            } else {
+                icon.innerText = '🏆';
+                title.innerText = '蓝队获胜！';
+                title.className = 'result-title blue-win';
+                detail.innerText =
+                    `蓝队「${blueWords}」以 ${scores.blue}:${scores.red} 战胜红队「${redWords}」\n汉字之力，势不可挡！`;
+            }
+
+            screenC.classList.add('visible');
+            if (finalWinner !== 'tie') {
+                triggerConfetti(finalWinner, true);
+            }
+
+            // 停止3D渲染循环（保留最后一帧）
+            setTimeout(() => {
+                if (animationId) cancelAnimationFrame(animationId);
+            }, 500);
+        }
+
+        function triggerConfetti(team, isFullScreen) {
+            const color = team === 'red' ? '#C62828' : '#1565C0';
+            if (isFullScreen) {
+                const duration = 3500;
+                const end = Date.now() + duration;
+                (function frame() {
+                    confetti({
+                        particleCount: 6,
+                        angle: 60,
+                        spread: 60,
+                        origin: { x: 0.05, y: 0.5 },
+                        colors: [color, '#FFD700', '#ffffff'],
+                    });
+                    confetti({
+                        particleCount: 6,
+                        angle: 120,
+                        spread: 60,
+                        origin: { x: 0.95, y: 0.5 },
+                        colors: [color, '#FFD700', '#ffffff'],
+                    });
+                    if (Date.now() < end) requestAnimationFrame(frame);
+                })();
+            } else {
+                const xPos = team === 'red' ? 0.25 : 0.75;
+                confetti({
+                    particleCount: 60,
+                    spread: 70,
+                    origin: { y: 0.15, x: xPos },
+                    colors: [color, '#FFD700', '#ffffff'],
+                    zIndex: 200,
+                });
+            }
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+    </script>
+</body>
+</html>
