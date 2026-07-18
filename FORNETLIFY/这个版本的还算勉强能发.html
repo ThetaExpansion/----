@@ -1028,7 +1028,7 @@
             let rFinalMass = calculateFinalMass(rMass);
             let bFinalMass = calculateFinalMass(bMass);
 
-            statusEl.innerHTML = `第 ${currentRound + 1} 回合... <span style="font-size:0.8rem"> (红质:${rFinalMass} 蓝质:${bFinalMass})</span>`;
+            statusEl.innerHTML = `第 ${currentRound + 1} 回合... <span style="font-size:0.8rem"> (红质量:${rFinalMass} 蓝质量:${bFinalMass})</span>`;
             updateRosterHighlight();
             spawnTops(rChar, bChar, rMass, bMass);
             roundStartTime = Date.now();
@@ -1104,7 +1104,7 @@
                 for (let i = sparks.length - 1; i >= 0; i--) {
                     let p = sparks[i];
                     ctx.globalAlpha = p.life;
-                    ctx.fillStyle = '#ffb347';
+                    ctx.fillStyle = '#ec44a4';
                     ctx.beginPath();
                     ctx.arc(p.x, p.y, p.size, 0, 2 * Math.PI);
                     ctx.fill();
@@ -1206,11 +1206,11 @@
                         }
                         if (redCoreAlive && !blueCoreAlive) {
                             score.red++;
-                            statusEl.textContent = `本回合：红方【胜】（蓝方核心碎块先完全停转）`;
+                            statusEl.textContent = `本回合：红方【胜】（核心碎块先完全停转）`;
                             celebrateRoundWinner('red');
                         } else if (blueCoreAlive && !redCoreAlive) {
                             score.blue++;
-                            statusEl.textContent = `本回合：蓝方【胜】（红方核心碎块先完全停转）`;
+                            statusEl.textContent = `本回合：蓝方【胜】（核心碎块先完全停转）`;
                             celebrateRoundWinner('blue');
                         } else {
                             statusEl.textContent = `本回合：双方核心碎块同时停止，平局`;
