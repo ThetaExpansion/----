@@ -104,7 +104,7 @@
 				border-radius: 10px;
 				box-shadow: 0 6px 18px rgba(40, 30, 20, 0.05);
 				margin-bottom: 20px;
-                margin-top: 80px;
+                margin-top: 20px;
 				z-index: 10;
 				gap: 12px;
 			}
@@ -332,6 +332,7 @@
 					padding: 18px 16px;
 					flex-direction: column;
 					gap: 10px;
+                    margin-top: 60px;
 				}
 				.score-board {
 					width: 100%;
@@ -1019,7 +1020,7 @@
 			/* ── 横屏模式优化 ── */
 			@media (max-height: 500px) and (orientation: landscape) {
 				#page-input {
-					padding-top: 5vh;
+					padding-top: 3vh;
 					justify-content: flex-start;
 				}
 				.input-card {
@@ -1077,7 +1078,7 @@
 			<div class="input-card">
 				<h1>誰的八字更硬測試器</h1>
 				<p style="color: #666; margin-bottom: 20px">
-					请输入纯汉字对战，双方字数必须相等
+					请输入纯汉字，汉字会依次变成陀螺对战，双方字数必须相等 ₍^ >ヮ<^₎ .ᐟ.ᐟ
 				</p>
 				<div class="input-group">
 					<input
@@ -1956,8 +1957,8 @@
 							let stabA = A.customStyle.stabilityScore || 3;
 							let stabB = B.customStyle.stabilityScore || 3;
 							// 稳固性影响碎裂阈值：1分=16, 3分=28, 5分=40
-							let thresholdA = 10 + stabA * 6;
-							let thresholdB = 10 + stabB * 6;
+							let thresholdA = -10 stabA * 6;
+							let thresholdB = -10 + stabB * 6;
 							// 稳固性影响碎裂概率乘数：1分=1.0, 3分=0.65, 5分=0.3
 							let multA = 0.4 + (5 - stabA) * 0.2;
 							let multB = 0.4 + (5 - stabB) * 0.2;
