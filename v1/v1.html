@@ -1155,13 +1155,14 @@
     letter-spacing: 4px;
 }
 .countdown-pop {
-    animation: cdPop 0.9s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    animation: cdPop 0.9s cubic-bezier(0.34, 1.56, 0.64, 1);
+    /* 不加 forwards，动画结束后回到元素默认样式（可见） */
 }
 @keyframes cdPop {
     0%   { transform: scale(0.25); opacity: 0; }
-    20%  { transform: scale(1.25); opacity: 1; }
-    80%  { transform: scale(1);    opacity: 1; }
-    100% { transform: scale(0.9);  opacity: 0; }
+    25%  { transform: scale(1.2);  opacity: 1; }
+    50%  { transform: scale(1);    opacity: 1; }
+    100% { transform: scale(1);    opacity: 1; }  /* 始终保持可见 */
 }
 /* ============================================================ */
 
