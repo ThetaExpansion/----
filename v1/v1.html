@@ -163,14 +163,15 @@
 				border-radius: 999px;
 				border: 1px solid var(--border-color);
 			}
-			#view-wrapper {
-				position: relative; 
-				perspective: 1200px;
-				margin-top: 20px;
-				width: 100%;
-				display: flex;
-				justify-content: center;
-			}
+#view-wrapper {
+    position: relative;
+    z-index: 1;          /* 新增：确立独立层叠上下文 */
+    perspective: 1200px;
+    margin-top: 20px;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
 			#game-container {
 				position: relative;
 				width: min(600px, 92vw);
@@ -259,7 +260,7 @@
 				background: #faf7f1;
 				border: 1px solid var(--border-color);
 				border-radius: 18px;
-				padding: clamp(14px, 2.5vw, 20px);
+				padding: clamp(10px, 2.5vw, 14px);
 				display: flex;
 				flex-direction: column;
 				align-items: center;
@@ -1142,7 +1143,7 @@
     display: none;
     align-items: center;
     justify-content: center;
-    z-index: 100;
+    z-index: 9999;       /* 修改：100 → 9999 */
     pointer-events: none;
     font-size: clamp(5rem, 14vw, 8rem);
     font-weight: 900;
@@ -1949,7 +1950,7 @@ function setKm(state, lockMs) {
 			}
 
 
-			function startCountdown(onComplete) {
+function startCountdown(onComplete) {
     const overlay = document.getElementById('countdown-overlay');
     if (!overlay) {
         onComplete();
@@ -1957,10 +1958,13 @@ function setKm(state, lockMs) {
     }
     let count = 3;
     overlay.style.display = 'flex';
+    overlay.style.opacity = '1';        // 新增：先强制可见
     overlay.textContent = count;
     overlay.classList.remove('countdown-pop');
-    void overlay.offsetWidth; // 强制 reflow，重启动画
-    overlay.classList.add('countdown-pop');
+    
+    requestAnimationFrame(() => {
+        overlay.classList.add('countdown-pop');
+    });
 
     const tick = () => {
         count--;
@@ -1971,9 +1975,15 @@ function setKm(state, lockMs) {
             return;
         }
         overlay.textContent = count;
+        overlay.style.opacity = '1';    // 新增：切数字时先重置可见
         overlay.classList.remove('countdown-pop');
+        
+        // 强制重绘后再加动画类，避免浏览器合并导致动画不重启
         void overlay.offsetWidth;
-        overlay.classList.add('countdown-pop');
+        
+        requestAnimationFrame(() => {
+            overlay.classList.add('countdown-pop');
+        });
         setTimeout(tick, 1000);
     };
     setTimeout(tick, 1000);
