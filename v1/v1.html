@@ -164,6 +164,7 @@
 				border: 1px solid var(--border-color);
 			}
 			#view-wrapper {
+				position: relative; 
 				perspective: 1200px;
 				margin-top: 20px;
 				width: 100%;
@@ -1076,70 +1077,95 @@
 			#btn-preview-close {
 				display: none !important;
 			}
+/* ==================== 颜文字高饱和纯色系统（纯新增） ==================== */
+#kaomoji-box {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	margin: 6px 0 -6px;
+	height: clamp(56px, 10vw, 80px);
+	position: relative;
+	z-index: 20;
+	pointer-events: none;
+}
+.km-breathe {
+	animation: kmBreathe 2.8s ease-in-out infinite;
+}
+.km-float {
+	animation: kmFloat 3.2s ease-in-out infinite;
+}
+.km-sway {
+	animation: kmSway 4.5s ease-in-out infinite;
+}
+.km-face {
+	font-size: clamp(1rem, 5.5vw, 1.8rem);
+	line-height: 1;
+	/* 默认轻松色：高饱和亮橙，在白色背景上极其扎眼 */
+	color: #ff6d00;
+	transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s, color 0.4s ease;
+	animation: kmFlicker 6s infinite;
+	transform: scale(var(--km-scale, 1));
+	user-select: none;
+	display: inline-block;
+	letter-spacing: 1px;
+	font-weight: 800;
+}
+@keyframes kmFloat {
+	0%, 100% { transform: translateY(0); }
+	50% { transform: translateY(-14px); }
+}
+@keyframes kmSway {
+	0%, 100% { transform: rotate(-4deg); }
+	50% { transform: rotate(4deg); }
+}
+@keyframes kmBreathe {
+	0%, 100% { opacity: 0.88; }
+	50% { opacity: 1; }
+}
+@keyframes kmFlicker {
+	0%, 100% { opacity: 1; }
+	41% { opacity: 1; }
+	42% { opacity: 0.82; }
+	43% { opacity: 1; }
+	46% { opacity: 0.9; }
+	47% { opacity: 1; }
+	65% { opacity: 1; }
+	66% { opacity: 0.85; }
+	67% { opacity: 1; }
 
-			/* ==================== 颜文字霓虹灯管系统（纯新增） ==================== */
-			#kaomoji-box {
-				display: flex;
-				justify-content: center;
-				align-items: center;
-				margin: 6px 0 -6px;
-				height: clamp(56px, 10vw, 80px);
-				position: relative;
-				z-index: 20;
-				pointer-events: none;
-			}
-			.km-breathe {
-				animation: kmBreathe 2.8s ease-in-out infinite;
-			}
-			.km-float {
-				animation: kmFloat 3.2s ease-in-out infinite;
-			}
-			.km-sway {
-				animation: kmSway 4.5s ease-in-out infinite;
-			}
-			.km-face {
-				font-size: clamp(1.8rem, 5.5vw, 2.8rem);
-				line-height: 1;
-				color: #fff;
-				transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s;
-				text-shadow:
-					0 0 4px #fff,
-					0 0 8px #fff,
-					0 0 16px var(--km-glow, #ffd700),
-					0 0 32px var(--km-glow, #ffd700),
-					0 0 64px var(--km-glow, #ffd700),
-					0 0 96px var(--km-glow, #ffd700);
-				filter: drop-shadow(0 0 10px rgba(255,255,255,0.5)) brightness(1.05);
-				animation: kmFlicker 6s infinite;
-				transform: scale(var(--km-scale, 1));
-				user-select: none;
-				display: inline-block;
-				letter-spacing: 1px;
-			}
-			@keyframes kmFloat {
-				0%, 100% { transform: translateY(0); }
-				50% { transform: translateY(-14px); }
-			}
-			@keyframes kmSway {
-				0%, 100% { transform: rotate(-4deg); }
-				50% { transform: rotate(4deg); }
-			}
-			@keyframes kmBreathe {
-				0%, 100% { opacity: 0.88; }
-				50% { opacity: 1; }
-			}
-			@keyframes kmFlicker {
-				0%, 100% { opacity: 1; filter: brightness(1); }
-				41% { opacity: 1; filter: brightness(1); }
-				42% { opacity: 0.82; filter: brightness(1.25); }
-				43% { opacity: 1; filter: brightness(1); }
-				46% { opacity: 0.9; filter: brightness(1.15); }
-				47% { opacity: 1; filter: brightness(1); }
-				65% { opacity: 1; filter: brightness(1); }
-				66% { opacity: 0.85; filter: brightness(1.3); }
-				67% { opacity: 1; filter: brightness(1); }
-			}
-			/* ================================================================== */
+}
+
+/* ==================== 倒计时系统（纯新增） ==================== */
+#countdown-overlay {
+    position: absolute;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    pointer-events: none;
+    font-size: clamp(5rem, 14vw, 8rem);
+    font-weight: 900;
+    color: #2b2a27;
+    text-shadow:
+        0 2px 0 rgba(255,255,255,0.95),
+        0 0 20px rgba(255,255,255,0.8);
+    font-family: 'Charter', Georgia, serif;
+    letter-spacing: 4px;
+}
+.countdown-pop {
+    animation: cdPop 0.9s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+@keyframes cdPop {
+    0%   { transform: scale(0.25); opacity: 0; }
+    20%  { transform: scale(1.25); opacity: 1; }
+    80%  { transform: scale(1);    opacity: 1; }
+    100% { transform: scale(0.9);  opacity: 0; }
+}
+/* ============================================================ */
+
+
+/* ====================================================================== */
 		</style>
 	</head>
 	<body>
@@ -1229,6 +1255,7 @@
 
 					<div id="view-wrapper">
 						<div id="game-container"></div>
+						<div id="countdown-overlay"></div>
 					</div>
 					<div class="battle-controls">
 						<button id="btn-next-round">开始回合</button>
@@ -1292,38 +1319,38 @@
 			let roundStartTime = 0;
 			let roundPreview = null;
 
-			// ==================== 颜文字状态机（纯新增） ====================
-			const KM_CFG = {
-				relaxed: { text: '₍^ >ヮ<^₎', glow: '#ffd700', scale: 1 },
-				tense:   { text: '₍^oヮo^₎',  glow: '#ff2a2a', scale: 1.12 },
-				worried: { text: '₍^⊙︿⊙^₎', glow: '#ff6b9d', scale: 0.92 },
-				happy:   { text: '₍^⸝⸝>ヮ<⸝⸝^₎', glow: '#44ff88', scale: 1.18 }
-			};
-			let kmState = 'relaxed';
-			let kmLockedUntil = 0;
-			let kmRestoreTimer = null;
+// ==================== 颜文字状态机（纯新增） ====================
+const KM_CFG = {
+	relaxed: { text: '₍^ >ヮ<^₎',   color: '#ff6d00', scale: 1 },   // 亮橙
+	tense:   { text: '₍^oヮo^₎',    color: '#e60012', scale: 1}, // 正红
+	worried: { text: '( ⁰▿⁰)',   color: '#9d0208', scale: 1 }, // 暗红
+	happy:   { text: 'ꉂꉂ(ˊᗜˋ)', color: '#00c853', scale: 1 } // 翠绿
+};
+let kmState = 'relaxed';
+let kmLockedUntil = 0;
+let kmRestoreTimer = null;
+let kmWorriedLocked = false; // 一旦进入担忧就永久锁定，直到 happy
 
-			function setKm(state, lockMs) {
-				const now = Date.now();
-				if (state !== 'happy' && now < kmLockedUntil) return;
-				if (kmState === state) return;
-				kmState = state;
-				kmLockedUntil = now + (lockMs || 1000);
-				const el = document.getElementById('kaomoji-face');
-				if (!el) return;
-				const c = KM_CFG[state];
-				el.textContent = c.text;
-				el.style.setProperty('--km-glow', c.glow);
-				el.style.setProperty('--km-scale', c.scale);
-				if (kmRestoreTimer) clearTimeout(kmRestoreTimer);
-				if (state !== 'relaxed') {
-					kmRestoreTimer = setTimeout(() => {
-						if (gameState === 'PLAYING') setKm('relaxed', 500);
-					}, lockMs || 1000);
-				}
-			}
-			// ===========================================================
-
+function setKm(state, lockMs) {
+	const now = Date.now();
+	// happy 可以覆盖一切；worried 锁定后只接受 happy
+	if (state !== 'happy') {
+		if (kmWorriedLocked && state !== 'worried') return;
+		if (now < kmLockedUntil) return;
+	}
+	kmState = state;
+	if (state === 'worried') kmWorriedLocked = true; // 进入担忧即锁定
+	kmLockedUntil = now + (lockMs || 1000);
+	const el = document.getElementById('kaomoji-face');
+	if (!el) return;
+	const c = KM_CFG[state];
+	el.textContent = c.text;
+	el.style.color = c.color;
+	el.style.setProperty('--km-scale', c.scale);
+	if (kmRestoreTimer) clearTimeout(kmRestoreTimer);
+	// 不再自动恢复 relaxed，去掉 setTimeout 恢复逻辑
+}
+// ===========================================================
 			// 追踪核心碎块（决定胜负的对象）
 			let trackedBody = { red: null, blue: null };
 
@@ -1764,7 +1791,9 @@
 				btnNextRound.style.display = "block";
 				initPhysics();
 				gameState = "ROUND_OVER";
+				kmWorriedLocked = false; // 新增：确保第一回合能切回轻松
 				setKm('relaxed', 0); // 颜文字：进入战场时恢复轻松
+				kmWorriedLocked = false;
 				requestAnimationFrame(fitBattleScale);
 			});
 
@@ -1907,6 +1936,10 @@
 					}
 					return;
 				}
+					/* 新增：一点击"下一回合"立刻切回轻松，不用等战斗开始 */
+	kmWorriedLocked = false;
+	setKm('relaxed', 0);
+	/* ====================================================== */
 				// 每回合开始前弹出预览
 				preparePreview();
 				previewModal.classList.remove("preview-hidden");
@@ -1915,25 +1948,77 @@
 				if (previewWindow) previewWindow.scrollTop = 0;
 			}
 
-			function doStartRound() {
-				setKm('relaxed', 0); // 颜文字：回合开始时轻松期待
-				gameState = "PLAYING";
-				btnNextRound.disabled = true;
-				let rChar = redName[currentRound],
-					bChar = blueName[currentRound];
-				let rMass = getCharComplexity(rChar),
-					bMass = getCharComplexity(bChar);
 
-				// 【新增】计算实际物理质量用于显示
-				let rFinalMass = calculateFinalMass(rMass);
-				let bFinalMass = calculateFinalMass(bMass);
+			function startCountdown(onComplete) {
+    const overlay = document.getElementById('countdown-overlay');
+    if (!overlay) {
+        onComplete();
+        return;
+    }
+    let count = 3;
+    overlay.style.display = 'flex';
+    overlay.textContent = count;
+    overlay.classList.remove('countdown-pop');
+    void overlay.offsetWidth; // 强制 reflow，重启动画
+    overlay.classList.add('countdown-pop');
 
-				statusEl.innerHTML = `第 ${currentRound + 1} 回合... <span style="font-size:0.8rem"> (红质量:${rFinalMass} 蓝质量:${bFinalMass})</span>`;
-				updateRosterHighlight();
-				spawnTops(rChar, bChar, rMass, bMass);
-				roundStartTime = Date.now();
-				currentRound++;
-			}
+    const tick = () => {
+        count--;
+        if (count <= 0) {
+            overlay.style.display = 'none';
+            overlay.classList.remove('countdown-pop');
+            onComplete();
+            return;
+        }
+        overlay.textContent = count;
+        overlay.classList.remove('countdown-pop');
+        void overlay.offsetWidth;
+        overlay.classList.add('countdown-pop');
+        setTimeout(tick, 1000);
+    };
+    setTimeout(tick, 1000);
+}
+
+function doStartRound() {
+    kmWorriedLocked = false;
+    setKm('relaxed', 0);
+
+    gameState = "COUNTDOWN"; // 先进入倒计时，不转
+    btnNextRound.disabled = true;
+    let rChar = redName[currentRound],
+        bChar = blueName[currentRound];
+    let rMass = getCharComplexity(rChar),
+        bMass = getCharComplexity(bChar);
+    let rFinalMass = calculateFinalMass(rMass);
+    let bFinalMass = calculateFinalMass(bMass);
+
+    statusEl.innerHTML = `第 ${currentRound + 1} 回合... <span style="font-size:0.8rem"> (红质量:${rFinalMass} 蓝质量:${bFinalMass})</span>`;
+    updateRosterHighlight();
+    spawnTops(rChar, bChar, rMass, bMass);
+
+    // 冻结：保存速度并清零，倒计时结束再恢复
+    activeBodies.forEach(b => {
+        b._savedAngularVelocity = b.angularVelocity;
+        b._savedVelocity = { x: b.velocity.x, y: b.velocity.y };
+        Body.setAngularVelocity(b, 0);
+        Body.setVelocity(b, { x: 0, y: 0 });
+    });
+
+    currentRound++;
+
+    // 3 秒倒计时，叠在 view-wrapper 上面
+    startCountdown(() => {
+        // 倒计时结束，恢复运动，正式进入 PLAYING
+        activeBodies.forEach(b => {
+            Body.setAngularVelocity(b, b._savedAngularVelocity || 0);
+            Body.setVelocity(b, b._savedVelocity || { x: 0, y: 0 });
+            delete b._savedAngularVelocity;
+            delete b._savedVelocity;
+        });
+        gameState = "PLAYING";
+        roundStartTime = Date.now();
+    });
+}
 
 			function initPhysics() {
 				engine = Engine.create({ gravity: { x: 0, y: 0 } });
@@ -2116,7 +2201,7 @@
 					for (let b of activeBodies) {
 						if (b.isActiveTop) maxSpin = Math.max(maxSpin, Math.abs(b.angularVelocity));
 					}
-					if (maxSpin < 0.9 && maxSpin > 0.03 && kmState !== 'worried' && kmState !== 'happy' && Date.now() > kmLockedUntil) {
+					if (maxSpin < 0.2 && maxSpin > 0.03 && kmState !== 'worried' && kmState !== 'happy' && Date.now() > kmLockedUntil) {
 						setKm('worried', 1200);
 					}
 					// =================================
