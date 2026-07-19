@@ -103,7 +103,7 @@
 				border: 1px solid var(--border-color);
 				border-radius: 10px;
 				box-shadow: 0 6px 18px rgba(40, 30, 20, 0.05);
-				margin-bottom: 20px;
+				margin-bottom: 40px;
                 margin-top: 20px;
 				z-index: 10;
 				gap: 12px;
@@ -167,7 +167,6 @@
     position: relative;
     z-index: 1;          /* 新增：确立独立层叠上下文 */
     perspective: 1200px;
-    margin-top: 20px;
     width: 100%;
     display: flex;
     justify-content: center;
@@ -351,9 +350,7 @@
 					flex-direction: column;
 					align-items: center;
 				}
-				#view-wrapper {
-					margin-top: 10px;
-				}
+
 				.preview-body {
 					gap: 14px;
 				}
@@ -701,10 +698,6 @@
 			}
 
 			/* ── 游戏容器响应式优化 ── */
-			#view-wrapper {
-				margin-top: clamp(12px, 2.5vw, 20px);
-				padding: 0 clamp(8px, 2vw, 16px);
-			}
 			#game-container {
 				width: min(520px, 88vw);
 				max-width: 100%;
@@ -947,9 +940,6 @@
 					max-width: 280px;
 					min-width: unset;
 				}
-				#view-wrapper {
-					margin-top: 8px;
-				}
 				.preview-window {
 					padding: 16px;
 					border-radius: 16px;
@@ -1043,7 +1033,7 @@
 				}
 				.battle-header {
 					padding: 10px 14px;
-					margin-bottom: 10px;
+					margin-bottom: 30px;
 				}
 				.battle-controls {
 					margin-top: 4px;
@@ -1143,11 +1133,12 @@
     display: none;
     align-items: center;
     justify-content: center;
+	transform: translateY(-20px);
     z-index: 9999;       /* 修改：100 → 9999 */
     pointer-events: none;
     font-size: clamp(5rem, 14vw, 8rem);
     font-weight: 900;
-    color: #2b2a27;
+    color: #8b8894;
     text-shadow:
         0 2px 0 rgba(255,255,255,0.95),
         0 0 20px rgba(255,255,255,0.8);
@@ -1323,10 +1314,10 @@
 
 // ==================== 颜文字状态机（纯新增） ====================
 const KM_CFG = {
-	relaxed: { text: '₍^ >ヮ<^₎',   color: '#ff6d00', scale: 1 },   // 亮橙
-	tense:   { text: '₍^oヮo^₎',    color: '#e60012', scale: 1}, // 正红
-	worried: { text: '( ⁰▿⁰)',   color: '#9d0208', scale: 1 }, // 暗红
-	happy:   { text: 'ꉂꉂ(ˊᗜˋ)', color: '#00c853', scale: 1 } // 翠绿
+	relaxed: { text: '₍^ >ヮ<^₎',   color: '#c0c0c0', scale: 1 },   // 亮橙
+	tense:   { text: '₍^oヮo^₎',    color: '#5c194', scale: 1}, // 正红
+	worried: { text: '( ⁰▿⁰)',   color: '#c8d65', scale: 1 }, // 暗红
+	happy:   { text: 'ꉂꉂ(ˊᗜˋ)', color: '#37ad2', scale: 1 } // 翠绿
 };
 let kmState = 'relaxed';
 let kmLockedUntil = 0;
