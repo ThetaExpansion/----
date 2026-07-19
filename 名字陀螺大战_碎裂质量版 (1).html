@@ -1,1389 +1,1698 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-    <title>名字陀螺大战 - 碎裂质量版</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js">
-    </script>
-    <style>
-        * {
-            box-sizing: border-box;
-        }
-        html,
-        body {
-            width: 100%;
-            height: 100%;
-            overflow-x: hidden;
-        }
-        :root {
-            --bg-color: #FAF8F4;
-            --text-color: #2b2a27;
-            --red-team: #b9483f;
-            --blue-team: #35688a;
-            --border-color: #ded9cd;
-        }
-        body {
-            margin: 0;
-            padding: 0;
-            background: radial-gradient(ellipse at top, #fdfcfa 0%, var(--bg-color) 55%, #f2efe8 100%);
-            color: var(--text-color);
-            font-family: "Charter", "Georgia", "Source Serif Pro", serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            min-height: 100dvh;
-            overflow-x: hidden;
-        }
-        h1 {
-            font-weight: normal;
-            letter-spacing: 2px;
-            font-size: clamp(1.5rem, 6vw, 2rem);
-            margin-bottom: 5px;
-        }
-        #page-input {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            width: 100%;
-            min-height: 100dvh;
-            padding: 24px 16px 40px;
-            justify-content: center;
-        }
-        #page-battle {
-            display: none;
-            width: 100%;
-            min-height: 100dvh;
-            overflow-y: auto;
-            padding: 14px 0 28px;
-        }
-        #battle-scale-outer {
-            width: 100%;
-            display: flex;
-            justify-content: center;
-            overflow: visible;
-            padding: 0 10px 16px;
-        }
-        #battle-scale-inner {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            width: min(900px, 100%);
-            flex-shrink: 0;
-        }
-        .input-card {
-            background: white;
-            padding: clamp(24px, 6vw, 40px);
-            border: 1px solid var(--border-color);
-            border-radius: 18px;
-            box-shadow: 0 16px 40px rgba(40, 30, 20, 0.08);
-            text-align: center;
-            max-width: 720px;
-            width: 100%;
-        }
-        .battle-header {
-            width: min(100%, 800px);
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: space-between;
-            align-items: center;
-            background: white;
-            padding: clamp(18px, 3vw, 30px);
-            border: 1px solid var(--border-color);
-            border-radius: 10px;
-            box-shadow: 0 6px 18px rgba(40, 30, 20, 0.05);
-            margin-bottom: 20px;
-            z-index: 10;
-            gap: 12px;
-        }
-        .team-roster {
-            display: flex;
-            gap: 10px;
-            font-size: 1.5rem;
-            font-weight: bold;
-            position: relative;
-        }
-        .char-box {
-            position: relative;
-            padding: 5px 10px;
-            border-radius: 6px;
-            color: #ccc;
-            transition: color 0.3s, transform 0.3s;
-        }
-        .char-box.red-active {
-            color: var(--red-team);
-            transform: scale(1.08);
-        }
-        .char-box.blue-active {
-            color: var(--blue-team);
-            transform: scale(1.08);
-        }
-        .char-box::after {
-            content: '';
-            position: absolute;
-            bottom: -5px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 6px;
-            height: 6px;
-            border-radius: 50%;
-            background-color: transparent;
-        }
-        .char-box.red-active::after {
-            background-color: var(--red-team);
-        }
-        .char-box.blue-active::after {
-            background-color: var(--blue-team);
-        }
-        .score-board {
-            font-size: 1.5rem;
-            font-weight: bold;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 6px;
-        }
-        .score-board>div:first-child {
-            background: var(--bg-color);
-            padding: 4px 18px;
-            border-radius: 999px;
-            border: 1px solid var(--border-color);
-        }
-        #view-wrapper {
-            margin-top: 20px;
-            width: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 0 8px;
-            overflow: visible;
-        }
-        #game-container {
-            position: relative;
-            width: min(86vw, 86dvh, 720px);
-            max-width: min(100%, 720px);
-            aspect-ratio: 1 / 1;
-            border-radius: 50%;
-            box-shadow: inset 0 30px 70px rgba(60, 45, 30, 0.18), 0 25px 50px rgba(60, 45, 30, 0.10);
-            background: radial-gradient(circle at 42% 38%, #e5e2d8 0%, #d9d7cc 45%, #edece6 100%);
-            transform: none;
-            transform-style: flat;
-            overflow: hidden;
-        }
-        canvas {
-            width: 100%;
-            height: 100%;
-            display: block;
-            border-radius: 50%;
-        }
-        .battle-controls {
-            margin-top: -30px;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 16px;
-            justify-content: center;
-            width: min(100%, 800px);
-            margin-inline: auto;
-            z-index: 10;
-        }
-        .preview-modal {
-            position: fixed;
-            inset: 0;
-            background: rgba(25, 25, 25, 0.72);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-            z-index: 10000;
-        }
-        .preview-window {
-            width: min(920px, 100%);
-            max-height: min(92vh, 100%);
-            overflow-y: auto;
-            background: white;
-            border-radius: 22px;
-            padding: 22px;
-            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.24);
-            position: relative;
-        }
-        .preview-hidden {
-            display: none !important;
-        }
-        .preview-header {
-            font-size: clamp(1.2rem, 2.5vw, 1.5rem);
-            font-weight: bold;
-            margin-bottom: 18px;
-        }
-        .preview-close {
-            position: absolute;
-            top: 18px;
-            right: 18px;
-            width: 40px;
-            height: 40px;
-            border: none;
-            border-radius: 50%;
-            background: #eee;
-            color: #333;
-            font-size: 1.2rem;
-            cursor: pointer;
-        }
-        .preview-body {
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 18px;
-        }
-        .preview-card {
-            background: #faf7f1;
-            border: 1px solid var(--border-color);
-            border-radius: 18px;
-            padding: 18px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 14px;
-        }
-        .preview-card.red {
-            border-color: rgba(185, 72, 63, 0.35);
-        }
-        .preview-card.blue {
-            border-color: rgba(53, 104, 138, 0.35);
-        }
-        .preview-title {
-            font-size: 1.15rem;
-            font-weight: bold;
-            color: var(--text-color);
-        }
-        .font-preview {
-            width: 100%;
-            min-height: 130px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: clamp(4rem, 10vw, 8rem);
-            font-weight: bold;
-            color: inherit;
-        }
-        .stat-list {
-            width: 100%;
-            display: grid;
-            gap: 10px;
-        }
-        .stat-row {
-            display: flex;
-            justify-content: space-between;
-            font-size: 0.95rem;
-            color: #444;
-        }
-        .stat-row strong {
-            font-weight: 700;
-        }
-        .preview-chart-wrapper {
-            width: 100%;
-            display: flex;
-            justify-content: center;
-        }
-        .preview-footer {
-            margin-top: 18px;
-            display: flex;
-            justify-content: center;
-        }
-        @media (max-width: 860px) {
-            .preview-body {
-                grid-template-columns: 1fr;
-            }
-        }
-        @media (max-width: 640px) {
-            .input-group {
-                gap: 12px;
-            }
-            button {
-                width: 100%;
-                max-width: 320px;
-            }
-            .battle-header {
-                padding: 18px 16px;
-            }
-            .score-board {
-                width: 100%;
-                align-items: center;
-            }
-            .team-roster {
-                font-size: 1.2rem;
-                justify-content: center;
-            }
-            .battle-controls {
-                margin-top: 12px;
-            }
-            #game-container {
-                width: min(94vw, 94dvh, 560px);
-            }
-        }
-        .input-group {
-            display: flex;
-            gap: 16px;
-            align-items: center;
-            margin: 30px 0;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-        input {
-            font-family: inherit;
-            font-size: 1.2rem;
-            padding: 12px;
-            width: clamp(90px, 30vw, 140px);
-            text-align: center;
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            background-color: var(--bg-color);
-            transition: outline 0.2s;
-        }
-        input:focus {
-            outline: 2px solid var(--text-color);
-        }
-        input.red-input {
-            color: var(--red-team);
-        }
-        input.blue-input {
-            color: var(--blue-team);
-        }
-        button {
-            font-family: inherit;
-            font-size: 1.1rem;
-            padding: 12px 30px;
-            background-color: var(--text-color);
-            color: var(--bg-color);
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-        button:hover {
-            background-color: #333;
-            transform: translateY(-2px);
-            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
-        }
-        button:active {
-            transform: translateY(0);
-        }
-        button:disabled {
-            background-color: var(--border-color);
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
-        }
-        .error-msg {
-            color: #d94a38;
-            height: 20px;
-            margin-top: 10px;
-            font-size: 0.9rem;
-        }
-        .feature-desc {
-            color: #666;
-            font-size: 0.9rem;
-            margin-top: 15px;
-            text-align: left;
-            background: #f2efe6;
-            padding: 12px 14px;
-            border-radius: 10px;
-        }
-        #confetti-canvas {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            pointer-events: none;
-            z-index: 9999;
-        }
-    </style>
-</head>
-<body>
-    <canvas id="confetti-canvas"></canvas>
+	<head>
+		<meta charset="UTF-8" />
+		<meta
+			name="viewport"
+			content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
+		/>
+		<title>名字陀螺大战 - 碎裂质量版</title>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+		<style>
+			* {
+				box-sizing: border-box;
+			}
+			html,
+			body {
+				width: 100%;
+				height: 100%;
+				overflow-x: hidden;
+			}
+			:root {
+				--bg-color: #faf8f4;
+				--text-color: #2b2a27;
+				--red-team: #b9483f;
+				--blue-team: #35688a;
+				--border-color: #ded9cd;
+			}
+			body {
+				margin: 0;
+				padding: 0;
+				background: radial-gradient(
+					ellipse at top,
+					#fdfcfa 0%,
+					var(--bg-color) 55%,
+					#f2efe8 100%
+				);
+				color: var(--text-color);
+				font-family: "Charter", "Georgia", "Source Serif Pro", serif;
+				display: flex;
+				flex-direction: column;
+				align-items: center;
+				min-height: 100dvh;
+				overflow-x: hidden;
+			}
+			h1 {
+				font-weight: normal;
+				letter-spacing: 2px;
+				font-size: clamp(1.5rem, 6vw, 2rem);
+				margin-bottom: 5px;
+			}
+			#page-input {
+				display: flex;
+				flex-direction: column;
+				align-items: center;
+				width: 100%;
+				min-height: 100dvh;
+				padding: 24px 16px 40px;
+				justify-content: center;
+			}
+			#page-battle {
+				display: none;
+				width: 100%;
+				min-height: 100dvh;
+				overflow-y: auto;
+				padding: 14px 0 28px;
+			}
+			#battle-scale-outer {
+				width: 100%;
+				display: flex;
+				justify-content: center;
+				overflow: visible;
+				padding: 0 10px 16px;
+			}
+			#battle-scale-inner {
+				display: flex;
+				flex-direction: column;
+				align-items: center;
+				width: min(900px, 100%);
+				flex-shrink: 0;
+			}
+			.input-card {
+				background: white;
+				padding: clamp(24px, 6vw, 40px);
+				border: 1px solid var(--border-color);
+				border-radius: 18px;
+				box-shadow: 0 16px 40px rgba(40, 30, 20, 0.08);
+				text-align: center;
+				max-width: 720px;
+				width: 100%;
+			}
+			.battle-header {
+				width: min(100%, 800px);
+				display: flex;
+				flex-wrap: wrap;
+				justify-content: space-between;
+				align-items: center;
+				background: white;
+				padding: clamp(18px, 3vw, 30px);
+				border: 1px solid var(--border-color);
+				border-radius: 10px;
+				box-shadow: 0 6px 18px rgba(40, 30, 20, 0.05);
+				margin-bottom: 20px;
+				z-index: 10;
+				gap: 12px;
+			}
+			.team-roster {
+				display: flex;
+				gap: 10px;
+				font-size: 1.5rem;
+				font-weight: bold;
+				position: relative;
+			}
+			.char-box {
+				position: relative;
+				padding: 5px 10px;
+				border-radius: 6px;
+				color: #ccc;
+				transition:
+					color 0.3s,
+					transform 0.3s;
+			}
+			.char-box.red-active {
+				color: var(--red-team);
+				transform: scale(1.08);
+			}
+			.char-box.blue-active {
+				color: var(--blue-team);
+				transform: scale(1.08);
+			}
+			.char-box::after {
+				content: "";
+				position: absolute;
+				bottom: -5px;
+				left: 50%;
+				transform: translateX(-50%);
+				width: 6px;
+				height: 6px;
+				border-radius: 50%;
+				background-color: transparent; 
+			}
+			.char-box.red-active::after {
+				background-color: var(--red-team);
+			}
+			.char-box.blue-active::after {
+				background-color: var(--blue-team);
+			}
+			.score-board {
+				font-size: 1.5rem;
+				font-weight: bold;
+				display: flex;
+				flex-direction: column;
+				align-items: center;
+				gap: 6px;
+			}
+			.score-board > div:first-child {
+				background: var(--bg-color);
+				padding: 4px 18px;
+				border-radius: 999px;
+				border: 1px solid var(--border-color);
+			}
+			#view-wrapper {
+				margin-top: 20px;
+				width: 100%;
+				display: flex;
+				justify-content: center;
+				align-items: center;
+				padding: 0 8px;
+				overflow: visible;
+			}
+			#game-container {
+				position: relative;
+				width: min(86vw, 86dvh, 720px);
+				max-width: min(100%, 720px);
+				aspect-ratio: 1 / 1;
+				border-radius: 50%;
+				box-shadow:
+					inset 0 30px 70px rgba(60, 45, 30, 0.18),
+					0 25px 50px rgba(60, 45, 30, 0.1);
+				background: radial-gradient(
+					circle at 42% 38%,
+					#e5e2d8 0%,
+					#d9d7cc 45%,
+					#edece6 100%
+				);
+				transform: none;
+				transform-style: flat;
+				overflow: hidden;
+			}
+			canvas {
+				width: 100%;
+				height: 100%;
+				display: block;
+				border-radius: 50%;
+			}
+			.battle-controls {
+				margin-top: -30px;
+				display: flex;
+				flex-wrap: wrap;
+				gap: 16px;
+				justify-content: center;
+				width: min(100%, 800px);
+				margin-inline: auto;
+				z-index: 10;
+			}
+			.preview-modal {
+				position: fixed;
+				inset: 0;
+				background: rgba(25, 25, 25, 0.72);
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				padding: 20px;
+				z-index: 10000;
+			}
+			.preview-window {
+				width: min(920px, 100%);
+				max-height: min(92vh, 100%);
+				overflow-y: auto;
+				background: white;
+				border-radius: 22px;
+				padding: 22px;
+				box-shadow: 0 24px 60px rgba(0, 0, 0, 0.24);
+				position: relative;
+			}
+			.preview-hidden {
+				display: none !important;
+			}
+			.preview-header {
+				font-size: clamp(1.2rem, 2.5vw, 1.5rem);
+				font-weight: bold;
+				margin-bottom: 18px;
+			}
+			.preview-close {
+				position: absolute;
+				top: 18px;
+				right: 18px;
+				width: 40px;
+				height: 40px;
+				border: none;
+				border-radius: 50%;
+				background: #eee;
+				color: #333;
+				font-size: 1.2rem;
+				cursor: pointer;
+			}
+			.preview-body {
+				display: grid;
+				grid-template-columns: repeat(2, minmax(0, 1fr));
+				gap: 18px;
+			}
+			.preview-card {
+				background: #faf7f1;
+				border: 1px solid var(--border-color);
+				border-radius: 18px;
+				padding: 18px;
+				display: flex;
+				flex-direction: column;
+				align-items: center;
+				gap: 14px;
+			}
+			.preview-card.red {
+				border-color: rgba(185, 72, 63, 0.35);
+			}
+			.preview-card.blue {
+				border-color: rgba(53, 104, 138, 0.35);
+			}
+			.preview-title {
+				font-size: 1.15rem;
+				font-weight: bold;
+				color: var(--text-color);
+			}
+			.font-preview {
+				width: 100%;
+				min-height: 130px;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				font-size: clamp(4rem, 10vw, 8rem);
+				font-weight: bold;
+				color: inherit;
+			}
+			.stat-list {
+				width: 100%;
+				display: grid;
+				gap: 10px;
+			}
+			.stat-row {
+				display: flex;
+				justify-content: space-between;
+				font-size: 0.95rem;
+				color: #444;
+			}
+			.stat-row strong {
+				font-weight: 700;
+			}
+			.preview-chart-wrapper {
+				width: 100%;
+				display: flex;
+				justify-content: center;
+			}
+			.preview-footer {
+				margin-top: 18px;
+				display: flex;
+				justify-content: center;
+			}
+			@media (max-width: 860px) {
+				.preview-body {
+					grid-template-columns: 1fr;
+				}
+			}
+			@media (max-width: 640px) {
+				.input-group {
+					gap: 12px;
+				}
+				button {
+					width: 100%;
+					max-width: 320px;
+				}
+				.battle-header {
+					padding: 18px 16px;
+				}
+				.score-board {
+					width: 100%;
+					align-items: center;
+				}
+				.team-roster {
+					font-size: 1.2rem;
+					justify-content: center;
+				}
+				.battle-controls {
+					margin-top: 12px;
+				}
+				#game-container {
+					width: min(94vw, 94dvh, 560px);
+				}
+			}
+			.input-group {
+				display: flex;
+				gap: 16px;
+				align-items: center;
+				margin: 30px 0;
+				flex-wrap: wrap;
+				justify-content: center;
+			}
+			input {
+				font-family: inherit;
+				font-size: 1.2rem;
+				padding: 12px;
+				width: clamp(90px, 30vw, 140px);
+				text-align: center;
+				border: 1px solid var(--border-color);
+				border-radius: 8px;
+				background-color: var(--bg-color);
+				transition: outline 0.2s;
+			}
+			input:focus {
+				outline: 2px solid var(--text-color);
+			}
+			input.red-input {
+				color: var(--red-team);
+			}
+			input.blue-input {
+				color: var(--blue-team);
+			}
+			button {
+				font-family: inherit;
+				font-size: 1.1rem;
+				padding: 12px 30px;
+				background-color: var(--text-color);
+				color: var(--bg-color);
+				border: none;
+				border-radius: 8px;
+				cursor: pointer;
+				transition: all 0.2s ease;
+			}
+			button:hover {
+				background-color: #333;
+				transform: translateY(-2px);
+				box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+			}
+			button:active {
+				transform: translateY(0);
+			}
+			button:disabled {
+				background-color: var(--border-color);
+				cursor: not-allowed;
+				transform: none;
+				box-shadow: none;
+			}
+			.error-msg {
+				color: #d94a38;
+				height: 20px;
+				margin-top: 10px;
+				font-size: 0.9rem;
+			}
+			.feature-desc {
+				color: #666;
+				font-size: 0.9rem;
+				margin-top: 15px;
+				text-align: left;
+				background: #f2efe6;
+				padding: 12px 14px;
+				border-radius: 10px;
+			}
+			#confetti-canvas {
+				position: fixed;
+				top: 0;
+				left: 0;
+				width: 100vw;
+				height: 100vh;
+				pointer-events: none;
+				z-index: 9999;
+			}
+		</style>
+	</head>
+	<body>
+		<canvas id="confetti-canvas"></canvas>
 
-    <div id="page-input">
-        <div class="input-card">
-            <h1>名字陀螺大战</h1>
-            <p style="color: #666; margin-bottom: 20px;">请输入纯汉字对战，双方字数必须相等</p>
-            <div class="input-group">
-                <input type="text" id="red-name" class="red-input" placeholder="红方 (2-5字)">
-                <span style="font-style: italic; color: #888; font-weight:bold;">VS</span>
-                <input type="text" id="blue-name" class="blue-input" placeholder="蓝方 (2-5字)">
-            </div>
-            <button id="btn-goto-battle">生成战场</button>
-            <div id="input-error" class="error-msg"></div>
-            <div class="feature-desc">
-                <strong>⚔️ 物理核心升级：</strong><br> 1. <strong>质量计算</strong>：笔画越复杂的字越重，旋转惯性越强，持久力越长。<br> 2. <strong>碎裂机制</strong>：猛烈撞击可能导致字体裂成大小不均的碎块——大概率甩出几个小碎渣，保留一块较大的"核心碎块"。<br> 3. <strong>胜负判定</strong>：只看双方的「核心碎块」谁先完全停转（精确归零），先停者判负，与其余小碎块是否还在转无关。
-            </div>
-        </div>
-    </div>
+		<div id="page-input">
+			<div class="input-card">
+				<h1>名字陀螺大战</h1>
+				<p style="color: #666; margin-bottom: 20px">
+					请输入纯汉字对战，双方字数必须相等
+				</p>
+				<div class="input-group">
+					<input
+						type="text"
+						id="red-name"
+						class="red-input"
+						placeholder="红方 (2-5字)"
+					/>
+					<span style="font-style: italic; color: #888; font-weight: bold"
+						>VS</span
+					>
+					<input
+						type="text"
+						id="blue-name"
+						class="blue-input"
+						placeholder="蓝方 (2-5字)"
+					/>
+				</div>
+				<button id="btn-goto-battle">生成战场</button>
+				<div id="input-error" class="error-msg"></div>
+				<div class="feature-desc">
+					<strong>⚔️ 物理核心升级：</strong><br />
+					1.
+					<strong>质量计算</strong
+					>：笔画越复杂的字越重，旋转惯性越强，持久力越长。<br />
+					2.
+					<strong>碎裂机制</strong
+					>：猛烈撞击可能导致字体裂成大小不均的碎块——大概率甩出几个小碎渣，保留一块较大的"核心碎块"。<br />
+					3.
+					<strong>胜负判定</strong
+					>：只看双方的「核心碎块」谁先完全停转（精确归零），先停者判负，与其余小碎块是否还在转无关。
+				</div>
+			</div>
+		</div>
 
-    <div id="page-battle">
-        <div id="battle-scale-outer">
-            <div id="battle-scale-inner">
-                <div class="battle-header">
-                    <div id="roster-red" class="team-roster"></div>
-                    <div class="score-board">
-                        <div>
-                            <span id="score-red" style="color:var(--red-team)">0</span>
-                            <span style="color:#888; margin: 0 10px;">:</span>
-                            <span id="score-blue" style="color:var(--blue-team)">0</span>
-                        </div>
-                        <div id="battle-status" style="font-size: 1rem; color: #666; font-weight: normal;">等待开战...</div>
-                    </div>
-                    <div id="roster-blue" class="team-roster"></div>
-                </div>
-                <div id="view-wrapper">
-                    <div id="game-container"></div>
-                </div>
-                <div class="battle-controls">
-                    <button id="btn-next-round">开始回合</button>
-                    <button id="btn-back-input" style="background-color: #888;">返回修改名字</button>
-                </div>
-            </div>
-        </div>
-    </div>
+		<div id="page-battle">
+			<div id="battle-scale-outer">
+				<div id="battle-scale-inner">
+					<div class="battle-header">
+						<div id="roster-red" class="team-roster"></div>
+						<div class="score-board">
+							<div>
+								<span id="score-red" style="color: var(--red-team)">0</span>
+								<span style="color: #888; margin: 0 10px">:</span>
+								<span id="score-blue" style="color: var(--blue-team)">0</span>
+							</div>
+							<div
+								id="battle-status"
+								style="font-size: 1rem; color: #666; font-weight: normal"
+							>
+								等待开战...
+							</div>
+						</div>
+						<div id="roster-blue" class="team-roster"></div>
+					</div>
+					<div id="view-wrapper">
+						<div id="game-container"></div>
+					</div>
+					<div class="battle-controls">
+						<button id="btn-next-round">开始回合</button>
+						<button id="btn-back-input" style="background-color: #888">
+							返回修改名字
+						</button>
+					</div>
+				</div>
+			</div>
+		</div>
 
-    <div id="preview-modal" class="preview-modal preview-hidden">
-        <div class="preview-window">
-            <button id="btn-preview-close" class="preview-close" aria-label="关闭预览">×</button>
-            <div class="preview-header">战前对比评估</div>
-            <div class="preview-body">
-                <div class="preview-card red">
-                    <div class="preview-title">红方实体</div>
-                    <div id="preview-red-char" class="font-preview">红</div>
-                    <div class="stat-list">
-                        <div class="stat-row"><span>质量</span><strong id="preview-red-mass">—</strong></div>
-                        <div class="stat-row"><span>速度</span><strong id="preview-red-speed">—</strong></div>
-                        <div class="stat-row"><span>稳固性</span><strong id="preview-red-stability">—</strong></div>
-                    </div>
-                    <div class="preview-chart-wrapper">
-                        <canvas id="radar-red" width="260" height="260"></canvas>
-                    </div>
-                </div>
-                <div class="preview-card blue">
-                    <div class="preview-title">蓝方实体</div>
-                    <div id="preview-blue-char" class="font-preview">蓝</div>
-                    <div class="stat-list">
-                        <div class="stat-row"><span>质量</span><strong id="preview-blue-mass">—</strong></div>
-                        <div class="stat-row"><span>速度</span><strong id="preview-blue-speed">—</strong></div>
-                        <div class="stat-row"><span>稳固性</span><strong id="preview-blue-stability">—</strong></div>
-                    </div>
-                    <div class="preview-chart-wrapper">
-                        <canvas id="radar-blue" width="260" height="260"></canvas>
-                    </div>
-                </div>
-            </div>
-            <div class="preview-footer">
-                <button id="btn-start-match">对比完成，开始比赛</button>
-            </div>
-        </div>
-    </div>
+		<div id="preview-modal" class="preview-modal preview-hidden">
+			<div class="preview-window">
+				<button
+					id="btn-preview-close"
+					class="preview-close"
+					aria-label="关闭预览"
+				>
+					×
+				</button>
+				<div class="preview-header">战前对比评估</div>
+				<div class="preview-body">
+					<div class="preview-card red">
+						<div class="preview-title">红方实体</div>
+						<div id="preview-red-char" class="font-preview">红</div>
+						<div class="stat-list">
+							<div class="stat-row">
+								<span>质量</span><strong id="preview-red-mass">—</strong>
+							</div>
+							<div class="stat-row">
+								<span>速度</span><strong id="preview-red-speed">—</strong>
+							</div>
+							<div class="stat-row">
+								<span>稳固性</span><strong id="preview-red-stability">—</strong>
+							</div>
+						</div>
+						<div class="preview-chart-wrapper">
+							<canvas id="radar-red" width="260" height="260"></canvas>
+						</div>
+					</div>
+					<div class="preview-card blue">
+						<div class="preview-title">蓝方实体</div>
+						<div id="preview-blue-char" class="font-preview">蓝</div>
+						<div class="stat-list">
+							<div class="stat-row">
+								<span>质量</span><strong id="preview-blue-mass">—</strong>
+							</div>
+							<div class="stat-row">
+								<span>速度</span><strong id="preview-blue-speed">—</strong>
+							</div>
+							<div class="stat-row">
+								<span>稳固性</span
+								><strong id="preview-blue-stability">—</strong>
+							</div>
+						</div>
+						<div class="preview-chart-wrapper">
+							<canvas id="radar-blue" width="260" height="260"></canvas>
+						</div>
+					</div>
+				</div>
+				<div class="preview-footer">
+					<button id="btn-start-match">对比完成，开始比赛</button>
+				</div>
+			</div>
+		</div>
 
-    <script>
-        const Engine = Matter.Engine,
-            Render = Matter.Render,
-            Runner = Matter.Runner,
-            Bodies = Matter.Bodies,
-            Composite = Matter.Composite,
-            Events = Matter.Events,
-            Body = Matter.Body;
+		<script>
+			const Engine = Matter.Engine,
+				Render = Matter.Render,
+				Runner = Matter.Runner,
+				Bodies = Matter.Bodies,
+				Composite = Matter.Composite,
+				Events = Matter.Events,
+				Body = Matter.Body;
 
-        let engine, render, runner;
-        let redName = '',
-            blueName = '';
-        let currentRound = 0;
-        let score = { red: 0, blue: 0 };
-        let gameState = 'IDLE';
-        let activeBodies = [];
-        let sparks = [];
-        let roundStartTime = 0;
-        let roundPreview = null;
- 
-        // 追踪核心碎块（决定胜负的对象）
-        let trackedBody = { red: null, blue: null };
+			let engine, render, runner;
+			let redName = "",
+				blueName = "";
+			let currentRound = 0;
+			let score = { red: 0, blue: 0 };
+			let gameState = "IDLE";
+			let activeBodies = [];
+			let sparks = [];
+			let roundStartTime = 0;
+			let roundPreview = null;
 
-        const BASE_SIZE = 90;
-        const FONT_SIZE = 76;
-        const width = 600,
-            height = 600,
-            cx = width / 2,
-            cy = height / 2,
-            radius = 280;
+			// 追踪核心碎块（决定胜负的对象）
+			let trackedBody = { red: null, blue: null };
 
-        // 转速相关常量
-        const STOP_THRESHOLD = 0.01; // 已弃用，仅作为参考保留
-        const DECAY_DANGER_ZONE = 0.02;
-        const FINAL_ZERO_THRESHOLD = 0.0002; // 转速低于该值时直接归零
-        const COLLISION_RETAIN = 0.999995;
-        const INITIAL_SPIN_BASE = 1.7;      // 大幅降低
-        const INITIAL_SPIN_RANDOM = 0.1;
+			const BASE_SIZE = 90;
+			const FONT_SIZE = 76;
+			const width = 600,
+				height = 600,
+				cx = width / 2,
+				cy = height / 2,
+				radius = 280;
 
-        // 平移速度相关常量
-        const LINEAR_DRAG = 0.99;
-        const SPIN_LINEAR_COUPLING_POWER = 0.35;
+			// 转速相关常量
+			const STOP_THRESHOLD = 0.01; // 已弃用，仅作为参考保留
+			const DECAY_DANGER_ZONE = 0.02;
+			const FINAL_ZERO_THRESHOLD = 0.0002; // 转速低于该值时直接归零
+			const COLLISION_RETAIN = 0.999995;
+			const INITIAL_SPIN_BASE = 1.7; // 大幅降低
+			const INITIAL_SPIN_RANDOM = 0.1;
 
-        // 碎裂极端程度
-        const SHATTER_EXTREME_POWER = 2.6;
-        const SHATTER_MIN_SPIN = 0.4;
-        const ROUND_STOP_DURATION = 2200;
-        // 碎裂坚固度：1=最脆，2=较脆，3=默认，4=较稳，5=最稳；自己改这里即可
-        const SHATTER_STABILITY_LEVEL = 3;
+			// 平移速度相关常量
+			const LINEAR_DRAG = 0.99;
+			const SPIN_LINEAR_COUPLING_POWER = 0.35;
 
-        function getStabilityModifier(level) {
-            switch (level) {
-                case 1: return 1.10;
-                case 2: return 1.05;
-                case 4: return 0.95;
-                case 5: return 0.90;
-                default: return 1.00;
-            }
-        }
+			// 碎裂极端程度
+			const SHATTER_EXTREME_POWER = 2.6;
+			const SHATTER_MIN_SPIN = 0.4;
+			const ROUND_STOP_DURATION = 2200;
+			// 碎裂坚固度：1=最脆，2=较脆，3=默认，4=较稳，5=最稳；自己改这里即可
+			const SHATTER_STABILITY_LEVEL = 3;
 
-        function estimateCollisionStress(bodyA, bodyB) {
-            const relativeVelocityX = bodyB.velocity.x - bodyA.velocity.x;
-            const relativeVelocityY = bodyB.velocity.y - bodyA.velocity.y;
-            const dx = bodyB.position.x - bodyA.position.x;
-            const dy = bodyB.position.y - bodyA.position.y;
-            const dist = Math.hypot(dx, dy) || 1;
-            const nx = dx / dist;
-            const ny = dy / dist;
-            const normalSpeed = relativeVelocityX * nx + relativeVelocityY * ny;
-            const tangentSpeed = relativeVelocityX * -ny + relativeVelocityY * nx;
-            const angularDelta = Math.abs(bodyA.angularVelocity - bodyB.angularVelocity);
-            return Math.max(0, normalSpeed * 0.8 + Math.abs(tangentSpeed) * 0.6 + angularDelta * 8);
-        }
+			function getStabilityModifier(level) {
+				switch (level) {
+					case 1:
+						return 1.1;
+					case 2:
+						return 1.05;
+					case 4:
+						return 0.95;
+					case 5:
+						return 0.9;
+					default:
+						return 1.0;
+				}
+			}
 
-        function shouldShatter(body, stressScore) {
-            if (!body || !body.isActiveTop || body.isFragment) return false;
-            if (Math.abs(body.angularVelocity) < SHATTER_MIN_SPIN) return false;
-            const stabilityMultiplier = getStabilityModifier(SHATTER_STABILITY_LEVEL);
-            const probability = Math.min(0.72, Math.max(0, stressScore / 140) * stabilityMultiplier);
-            return Math.random() < probability;
-        }
+			function estimateCollisionStress(bodyA, bodyB) {
+				const relativeVelocityX = bodyB.velocity.x - bodyA.velocity.x;
+				const relativeVelocityY = bodyB.velocity.y - bodyA.velocity.y;
+				const dx = bodyB.position.x - bodyA.position.x;
+				const dy = bodyB.position.y - bodyA.position.y;
+				const dist = Math.hypot(dx, dy) || 1;
+				const nx = dx / dist;
+				const ny = dy / dist;
+				const normalSpeed = relativeVelocityX * nx + relativeVelocityY * ny;
+				const tangentSpeed = relativeVelocityX * -ny + relativeVelocityY * nx;
+				const angularDelta = Math.abs(
+					bodyA.angularVelocity - bodyB.angularVelocity,
+				);
+				return Math.max(
+					0,
+					normalSpeed * 0.8 + Math.abs(tangentSpeed) * 0.6 + angularDelta * 8,
+				);
+			}
 
-        function beginRoundStopMotion() {
-            activeBodies.forEach(body => {
-                if (!body || body.isStatic) return;
-                body.finishMotion = true;
-                body.finishStartTime = performance.now();
-                body.finishFromState = {
-                    x: body.velocity.x,
-                    y: body.velocity.y,
-                    angular: body.angularVelocity
-                };
-            });
-        }
+			function shouldShatter(body, stressScore) {
+				if (!body || !body.isActiveTop || body.isFragment) return false;
+				if (Math.abs(body.angularVelocity) < SHATTER_MIN_SPIN) return false;
+				const stabilityMultiplier = getStabilityModifier(
+					SHATTER_STABILITY_LEVEL,
+				);
+				const probability = Math.min(
+					0.72,
+					Math.max(0, stressScore / 140) * stabilityMultiplier,
+				);
+				return Math.random() < probability;
+			}
 
-        function updateRoundStopMotion(now) {
-            activeBodies.forEach(body => {
-                if (!body || !body.finishMotion) return;
-                const elapsed = now - body.finishStartTime;
-                const progress = Math.min(1, elapsed / ROUND_STOP_DURATION);
-                const factor = 1 - progress;
-                const targetVelocity = {
-                    x: body.finishFromState.x * factor,
-                    y: body.finishFromState.y * factor
-                };
-                Body.setVelocity(body, targetVelocity);
-                Body.setAngularVelocity(body, body.finishFromState.angular * factor);
-                if (progress >= 1) {
-                    Body.setVelocity(body, { x: 0, y: 0 });
-                    Body.setAngularVelocity(body, 0);
-                    body.finishMotion = false;
-                    body.isActiveTop = false;
-                }
-            });
-        }
+			function beginRoundStopMotion() {
+				activeBodies.forEach((body) => {
+					if (!body || body.isStatic) return;
+					body.finishMotion = true;
+					body.finishStartTime = performance.now();
+					body.finishFromState = {
+						x: body.velocity.x,
+						y: body.velocity.y,
+						angular: body.angularVelocity,
+					};
+				});
+			}
 
-        // 临近停止加速衰减函数（仍保留，用于快速降到归零阈值附近）
-        function getExtraDecayFactor(angularVelocity) {
-            let speed = Math.abs(angularVelocity);
-            if (speed >= DECAY_DANGER_ZONE) return 1;
-            let t = 1 - (speed - STOP_THRESHOLD) / (DECAY_DANGER_ZONE - STOP_THRESHOLD);
-            t = Math.max(0, Math.min(1, t));
-            let extraLoss = t * t * 0.08;
-            return 1 - extraLoss;
-        }
+			function updateRoundStopMotion(now) {
+				activeBodies.forEach((body) => {
+					if (!body || !body.finishMotion) return;
+					const elapsed = now - body.finishStartTime;
+					const progress = Math.min(1, elapsed / ROUND_STOP_DURATION);
+					const factor = 1 - progress;
+					const targetVelocity = {
+						x: body.finishFromState.x * factor,
+						y: body.finishFromState.y * factor,
+					};
+					Body.setVelocity(body, targetVelocity);
+					Body.setAngularVelocity(body, body.finishFromState.angular * factor);
+					if (progress >= 1) {
+						Body.setVelocity(body, { x: 0, y: 0 });
+						Body.setAngularVelocity(body, 0);
+						body.finishMotion = false;
+						body.isActiveTop = false;
+					}
+				});
+			}
 
-        const pageInput = document.getElementById('page-input');
-        const pageBattle = document.getElementById('page-battle');
-        const previewModal = document.getElementById('preview-modal');
-        const errorMsg = document.getElementById('input-error');
-        const btnGotoBattle = document.getElementById('btn-goto-battle');
-        const btnStartMatch = document.getElementById('btn-start-match');
-        const btnPreviewClose = document.getElementById('btn-preview-close');
-        const btnNextRound = document.getElementById('btn-next-round');
-        const btnBackInput = document.getElementById('btn-back-input');
-        const gameContainer = document.getElementById('game-container');
-        const statusEl = document.getElementById('battle-status');
+			// 临近停止加速衰减函数（仍保留，用于快速降到归零阈值附近）
+			function getExtraDecayFactor(angularVelocity) {
+				let speed = Math.abs(angularVelocity);
+				if (speed >= DECAY_DANGER_ZONE) return 1;
+				let t =
+					1 - (speed - STOP_THRESHOLD) / (DECAY_DANGER_ZONE - STOP_THRESHOLD);
+				t = Math.max(0, Math.min(1, t));
+				let extraLoss = t * t * 0.08;
+				return 1 - extraLoss;
+			}
 
-        function fitBattleScale() {
-            const inner = document.getElementById('battle-scale-inner');
-            const outer = document.getElementById('battle-scale-outer');
-            if (!inner || !outer || pageBattle.style.display === 'none') return;
-            inner.style.transform = 'none';
-            const naturalW = inner.offsetWidth;
-            const naturalH = inner.offsetHeight;
-            if (naturalW === 0 || naturalH === 0) return;
-            const availW = window.innerWidth * 0.96;
-            const availH = window.innerHeight * 0.96;
-            const scale = Math.min(1, availW / naturalW, availH / naturalH);
-            inner.style.transform = `scale(${scale})`;
-            inner.style.transformOrigin = 'top center';
-            outer.style.height = (naturalH * scale) + 'px';
-        }
-        window.addEventListener('resize', fitBattleScale);
-        window.addEventListener('orientationchange', () => setTimeout(fitBattleScale, 100));
+			const pageInput = document.getElementById("page-input");
+			const pageBattle = document.getElementById("page-battle");
+			const previewModal = document.getElementById("preview-modal");
+			const errorMsg = document.getElementById("input-error");
+			const btnGotoBattle = document.getElementById("btn-goto-battle");
+			const btnStartMatch = document.getElementById("btn-start-match");
+			const btnPreviewClose = document.getElementById("btn-preview-close");
+			const btnNextRound = document.getElementById("btn-next-round");
+			const btnBackInput = document.getElementById("btn-back-input");
+			const gameContainer = document.getElementById("game-container");
+			const statusEl = document.getElementById("battle-status");
 
-        // 礼花系统
-        const confettiCanvas = document.getElementById('confetti-canvas');
-        const confettiCtx = confettiCanvas.getContext('2d');
-        let confettiParticles = [];
-        let confettiAnimRunning = false;
+			function fitBattleScale() {
+				const inner = document.getElementById("battle-scale-inner");
+				const outer = document.getElementById("battle-scale-outer");
+				if (!inner || !outer || pageBattle.style.display === "none") return;
+				inner.style.transform = "none";
+				const naturalW = inner.offsetWidth;
+				const naturalH = inner.offsetHeight;
+				if (naturalW === 0 || naturalH === 0) return;
+				const availW = window.innerWidth * 0.96;
+				const availH = window.innerHeight * 0.96;
+				const scale = Math.min(1, availW / naturalW, availH / naturalH);
+				inner.style.transform = `scale(${scale})`;
+				inner.style.transformOrigin = "top center";
+				outer.style.height = naturalH * scale + "px";
+			}
+			window.addEventListener("resize", fitBattleScale);
+			window.addEventListener("orientationchange", () =>
+				setTimeout(fitBattleScale, 100),
+			);
 
-        function resizeConfettiCanvas() {
-            confettiCanvas.width = window.innerWidth;
-            confettiCanvas.height = window.innerHeight;
-        }
-        window.addEventListener('resize', resizeConfettiCanvas);
-        resizeConfettiCanvas();
+			// 礼花系统
+			const confettiCanvas = document.getElementById("confetti-canvas");
+			const confettiCtx = confettiCanvas.getContext("2d");
+			let confettiParticles = [];
+			let confettiAnimRunning = false;
 
-        function spawnConfetti(x, y, options = {}) {
-            const { count = 60, colors = ['#b9483f', '#35688a', '#e3b23c', '#6fae6a', '#ffffff'], spread = 8, gravity = 0.15,
-                big = false } = options;
-            for (let i = 0; i < count; i++) {
-                let angle = Math.random() * Math.PI * 2;
-                let speed = (0.3 + Math.random()) * spread;
-                confettiParticles.push({
-                    x,
-                    y,
-                    vx: Math.cos(angle) * speed,
-                    vy: Math.sin(angle) * speed - spread * 0.4,
-                    size: (big ? 6 : 4) + Math.random() * (big ? 6 : 4),
-                    color: colors[Math.floor(Math.random() * colors.length)],
-                    rotation: Math.random() * Math.PI * 2,
-                    vr: (Math.random() - 0.5) * 0.3,
-                    life: 1.0,
-                    decay: 0.008 + Math.random() * 0.006,
-                    gravity
-                });
-            }
-            if (!confettiAnimRunning) {
-                confettiAnimRunning = true;
-                requestAnimationFrame(updateConfetti);
-            }
-        }
+			function resizeConfettiCanvas() {
+				confettiCanvas.width = window.innerWidth;
+				confettiCanvas.height = window.innerHeight;
+			}
+			window.addEventListener("resize", resizeConfettiCanvas);
+			resizeConfettiCanvas();
 
-        function updateConfetti() {
-            confettiCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
-            for (let i = confettiParticles.length - 1; i >= 0; i--) {
-                let p = confettiParticles[i];
-                p.vy += p.gravity;
-                p.x += p.vx;
-                p.y += p.vy;
-                p.rotation += p.vr;
-                p.life -= p.decay;
-                if (p.life <= 0 || p.y > confettiCanvas.height + 60) {
-                    confettiParticles.splice(i, 1);
-                    continue;
-                }
-                confettiCtx.save();
-                confettiCtx.globalAlpha = Math.max(0, p.life);
-                confettiCtx.translate(p.x, p.y);
-                confettiCtx.rotate(p.rotation);
-                confettiCtx.fillStyle = p.color;
-                confettiCtx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.6);
-                confettiCtx.restore();
-            }
-            if (confettiParticles.length > 0) {
-                requestAnimationFrame(updateConfetti);
-            } else {
-                confettiAnimRunning = false;
-            }
-        }
+			function spawnConfetti(x, y, options = {}) {
+				const {
+					count = 60,
+					colors = ["#b9483f", "#35688a", "#e3b23c", "#6fae6a", "#ffffff"],
+					spread = 8,
+					gravity = 0.15,
+					big = false,
+				} = options;
+				for (let i = 0; i < count; i++) {
+					let angle = Math.random() * Math.PI * 2;
+					let speed = (0.3 + Math.random()) * spread;
+					confettiParticles.push({
+						x,
+						y,
+						vx: Math.cos(angle) * speed,
+						vy: Math.sin(angle) * speed - spread * 0.4,
+						size: (big ? 6 : 4) + Math.random() * (big ? 6 : 4),
+						color: colors[Math.floor(Math.random() * colors.length)],
+						rotation: Math.random() * Math.PI * 2,
+						vr: (Math.random() - 0.5) * 0.3,
+						life: 1.0,
+						decay: 0.008 + Math.random() * 0.006,
+						gravity,
+					});
+				}
+				if (!confettiAnimRunning) {
+					confettiAnimRunning = true;
+					requestAnimationFrame(updateConfetti);
+				}
+			}
 
-        function celebrateRoundWinner(team) {
-            const rosterEl = document.getElementById(team === 'red' ? 'roster-red' : 'roster-blue');
-            const rect = rosterEl.getBoundingClientRect();
-            const colors = team === 'red'
-                ? ['#b9483f', '#f2b84b', '#ffffff']
-                : ['#35688a', '#8ac4d9', '#ffffff'];
-            spawnConfetti(rect.left + rect.width / 2, rect.top + rect.height / 2, { count: 30, spread: 6, gravity: 0.16,
-                colors, big: false });
-        }
+			function updateConfetti() {
+				confettiCtx.clearRect(
+					0,
+					0,
+					confettiCanvas.width,
+					confettiCanvas.height,
+				);
+				for (let i = confettiParticles.length - 1; i >= 0; i--) {
+					let p = confettiParticles[i];
+					p.vy += p.gravity;
+					p.x += p.vx;
+					p.y += p.vy;
+					p.rotation += p.vr;
+					p.life -= p.decay;
+					if (p.life <= 0 || p.y > confettiCanvas.height + 60) {
+						confettiParticles.splice(i, 1);
+						continue;
+					}
+					confettiCtx.save();
+					confettiCtx.globalAlpha = Math.max(0, p.life);
+					confettiCtx.translate(p.x, p.y);
+					confettiCtx.rotate(p.rotation);
+					confettiCtx.fillStyle = p.color;
+					confettiCtx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.6);
+					confettiCtx.restore();
+				}
+				if (confettiParticles.length > 0) {
+					requestAnimationFrame(updateConfetti);
+				} else {
+					confettiAnimRunning = false;
+				}
+			}
 
-        function celebrateMatchWinner() {
-            const redRect = document.getElementById('roster-red').getBoundingClientRect();
-            const blueRect = document.getElementById('roster-blue').getBoundingClientRect();
-            spawnConfetti(redRect.left + redRect.width / 2, redRect.top + redRect.height / 2, { count: 70, spread: 9,
-                gravity: 0.12, colors: ['#b9483f', '#f2b84b', '#ffffff'], big: true });
-            spawnConfetti(blueRect.left + blueRect.width / 2, blueRect.top + blueRect.height / 2, { count: 70, spread: 9,
-                gravity: 0.12, colors: ['#35688a', '#8ac4d9', '#ffffff'], big: true });
-        }
+			function celebrateRoundWinner(team) {
+				const rosterEl = document.getElementById(
+					team === "red" ? "roster-red" : "roster-blue",
+				);
+				const rect = rosterEl.getBoundingClientRect();
+				const colors =
+					team === "red"
+						? ["#b9483f", "#f2b84b", "#ffffff"]
+						: ["#35688a", "#8ac4d9", "#ffffff"];
+				spawnConfetti(rect.left + rect.width / 2, rect.top + rect.height / 2, {
+					count: 30,
+					spread: 6,
+					gravity: 0.16,
+					colors,
+					big: false,
+				});
+			}
 
-        function getCharComplexity(char) {
-            const c = document.createElement('canvas');
-            const ctx = c.getContext('2d', { willReadFrequently: true });
-            c.width = 100;
-            c.height = 100;
-            ctx.fillStyle = "#fff";
-            ctx.fillRect(0, 0, 100, 100);
-            ctx.font = `bold ${FONT_SIZE}px 'Source Serif Pro', Georgia, serif`;
-            ctx.fillStyle = "#000";
-            ctx.textAlign = "center";
-            ctx.textBaseline = "middle";
-            ctx.fillText(char, 50, 50);
-            const imgData = ctx.getImageData(0, 0, 100, 100).data;
-            let darkPixels = 0;
-            for (let i = 0; i < imgData.length; i += 4) {
-                if (imgData[i] < 128) darkPixels++;
-            }
-            return darkPixels;
-        }
+			function celebrateMatchWinner() {
+				const redRect = document
+					.getElementById("roster-red")
+					.getBoundingClientRect();
+				const blueRect = document
+					.getElementById("roster-blue")
+					.getBoundingClientRect();
+				spawnConfetti(
+					redRect.left + redRect.width / 2,
+					redRect.top + redRect.height / 2,
+					{
+						count: 70,
+						spread: 9,
+						gravity: 0.12,
+						colors: ["#b9483f", "#f2b84b", "#ffffff"],
+						big: true,
+					},
+				);
+				spawnConfetti(
+					blueRect.left + blueRect.width / 2,
+					blueRect.top + blueRect.height / 2,
+					{
+						count: 70,
+						spread: 9,
+						gravity: 0.12,
+						colors: ["#35688a", "#8ac4d9", "#ffffff"],
+						big: true,
+					},
+				);
+			}
 
-        function clampLinearSpeedPenalty(value) {
-            const minValue = 3000;
-            const maxValue = 5800;
-            const minPenalty = 0;
-            const maxPenalty = 1000;
-            if (value <= minValue) return minPenalty;
-            if (value >= maxValue) return maxPenalty;
-            return ((value - minValue) / (maxValue - minValue)) * (maxPenalty - minPenalty) + minPenalty;
-        }
+			function getCharComplexity(char) {
+				const c = document.createElement("canvas");
+				const ctx = c.getContext("2d", { willReadFrequently: true });
+				c.width = 100;
+				c.height = 100;
+				ctx.fillStyle = "#fff";
+				ctx.fillRect(0, 0, 100, 100);
+				ctx.font = `bold ${FONT_SIZE}px 'Source Serif Pro', Georgia, serif`;
+				ctx.fillStyle = "#000";
+				ctx.textAlign = "center";
+				ctx.textBaseline = "middle";
+				ctx.fillText(char, 50, 50);
+				const imgData = ctx.getImageData(0, 0, 100, 100).data;
+				let darkPixels = 0;
+				for (let i = 0; i < imgData.length; i += 4) {
+					if (imgData[i] < 128) darkPixels++;
+				}
+				return darkPixels;
+			}
 
-        function calculateFinalSpin(initialSpin, mass) {
-            const penalty = clampLinearSpeedPenalty(mass);
-            return Math.max(0.05, initialSpin - penalty / 1000);
-        }
+			function clampLinearSpeedPenalty(value) {
+				const minValue = 3000;
+				const maxValue = 5800;
+				const minPenalty = 0;
+				const maxPenalty = 1000;
+				if (value <= minValue) return minPenalty;
+				if (value >= maxValue) return maxPenalty;
+				return (
+					((value - minValue) / (maxValue - minValue)) *
+						(maxPenalty - minPenalty) +
+					minPenalty
+				);
+			}
 
-        function normalizeScore(value, min, max) {
-            const ratio = (value - min) / (max - min);
-            return Math.round(Math.min(5, Math.max(1, ratio * 4 + 1)));
-        }
+			function calculateFinalSpin(initialSpin, mass) {
+				const penalty = clampLinearSpeedPenalty(mass);
+				return Math.max(0.05, initialSpin - penalty / 1000);
+			}
 
-        function calculateFinalMass(complexity) {
-            const density = 0.15 * (complexity / 1500);
-            return Math.round(density * BASE_SIZE * BASE_SIZE + 3000);
-        }
+			function normalizeScore(value, min, max) {
+				const ratio = (value - min) / (max - min);
+				return Math.round(Math.min(5, Math.max(1, ratio * 4 + 1)));
+			}
 
-        function calculateStability(complexity) {
-            return normalizeScore(complexity, 1500, 5200);
-        }
+			function calculateFinalMass(complexity) {
+				const density = 0.15 * (complexity / 1500);
+				return Math.round(density * BASE_SIZE * BASE_SIZE + 3000);
+			}
 
-        function drawRadarChart(canvas, scores, labels, color) {
-            const ctx = canvas.getContext('2d');
-            const size = Math.min(canvas.width, canvas.height);
-            const center = { x: size / 2, y: size / 2 };
-            const radius = size * 0.34;
-            ctx.clearRect(0, 0, size, size);
-            ctx.save();
-            ctx.translate(center.x, center.y);
-            ctx.font = '12px Arial';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.strokeStyle = '#d8d4ca';
-            ctx.lineWidth = 1;
-            for (let ring = 1; ring <= 4; ring++) {
-                ctx.beginPath();
-                ctx.arc(0, 0, (radius / 4) * ring, 0, 2 * Math.PI);
-                ctx.stroke();
-            }
-            const axisCount = scores.length;
-            for (let i = 0; i < axisCount; i++) {
-                const angle = Math.PI / 2 + (i * 2 * Math.PI) / axisCount;
-                const x = Math.cos(angle) * radius;
-                const y = -Math.sin(angle) * radius;
-                ctx.beginPath();
-                ctx.moveTo(0, 0);
-                ctx.lineTo(x, y);
-                ctx.stroke();
-                ctx.fillStyle = '#333';
-                ctx.fillText(labels[i], x * 1.24, y * 1.24);
-            }
-            ctx.beginPath();
-            scores.forEach((score, i) => {
-                const value = (score - 1) / 4;
-                const angle = Math.PI / 2 + (i * 2 * Math.PI) / axisCount;
-                const x = Math.cos(angle) * radius * value;
-                const y = -Math.sin(angle) * radius * value;
-                if (i === 0) {
-                    ctx.moveTo(x, y);
-                } else {
-                    ctx.lineTo(x, y);
-                }
-            });
-            ctx.closePath();
-            ctx.fillStyle = `${color}22`;
-            ctx.strokeStyle = color;
-            ctx.lineWidth = 2;
-            ctx.fill();
-            ctx.stroke();
-            scores.forEach((score, i) => {
-                const value = (score - 1) / 4;
-                const angle = Math.PI / 2 + (i * 2 * Math.PI) / axisCount;
-                const x = Math.cos(angle) * radius * value;
-                const y = -Math.sin(angle) * radius * value;
-                ctx.beginPath();
-                ctx.arc(x, y, 5, 0, 2 * Math.PI);
-                ctx.fillStyle = color;
-                ctx.fill();
-                ctx.strokeStyle = '#fff';
-                ctx.lineWidth = 1;
-                ctx.stroke();
-            });
-            ctx.restore();
-        }
+			function calculateStability(complexity) {
+				return normalizeScore(complexity, 1500, 5200);
+			}
 
-        function isChinese(str) { return /^[\u4e00-\u9fa5]+$/.test(str); }
+			function drawRadarChart(canvas, scores, labels, color) {
+				const ctx = canvas.getContext("2d");
+				const size = Math.min(canvas.width, canvas.height);
+				const center = { x: size / 2, y: size / 2 };
+				const radius = size * 0.34;
+				ctx.clearRect(0, 0, size, size);
+				ctx.save();
+				ctx.translate(center.x, center.y);
+				ctx.font = "12px Arial";
+				ctx.textAlign = "center";
+				ctx.textBaseline = "middle";
+				ctx.strokeStyle = "#d8d4ca";
+				ctx.lineWidth = 1;
+				for (let ring = 1; ring <= 4; ring++) {
+					ctx.beginPath();
+					ctx.arc(0, 0, (radius / 4) * ring, 0, 2 * Math.PI);
+					ctx.stroke();
+				}
+				const axisCount = scores.length;
+				for (let i = 0; i < axisCount; i++) {
+					const angle = Math.PI / 2 + (i * 2 * Math.PI) / axisCount;
+					const x = Math.cos(angle) * radius;
+					const y = -Math.sin(angle) * radius;
+					ctx.beginPath();
+					ctx.moveTo(0, 0);
+					ctx.lineTo(x, y);
+					ctx.stroke();
+					ctx.fillStyle = "#333";
+					ctx.fillText(labels[i], x * 1.24, y * 1.24);
+				}
+				ctx.beginPath();
+				scores.forEach((score, i) => {
+					const value = (score - 1) / 4;
+					const angle = Math.PI / 2 + (i * 2 * Math.PI) / axisCount;
+					const x = Math.cos(angle) * radius * value;
+					const y = -Math.sin(angle) * radius * value;
+					if (i === 0) {
+						ctx.moveTo(x, y);
+					} else {
+						ctx.lineTo(x, y);
+					}
+				});
+				ctx.closePath();
+				ctx.fillStyle = `${color}22`;
+				ctx.strokeStyle = color;
+				ctx.lineWidth = 2;
+				ctx.fill();
+				ctx.stroke();
+				scores.forEach((score, i) => {
+					const value = (score - 1) / 4;
+					const angle = Math.PI / 2 + (i * 2 * Math.PI) / axisCount;
+					const x = Math.cos(angle) * radius * value;
+					const y = -Math.sin(angle) * radius * value;
+					ctx.beginPath();
+					ctx.arc(x, y, 5, 0, 2 * Math.PI);
+					ctx.fillStyle = color;
+					ctx.fill();
+					ctx.strokeStyle = "#fff";
+					ctx.lineWidth = 1;
+					ctx.stroke();
+				});
+				ctx.restore();
+			}
 
-        function preparePreview(roundIndex = 0) {
-            if (!redName || !blueName || roundIndex >= redName.length) {
-                return false;
-            }
-            const rChar = redName[roundIndex];
-            const bChar = blueName[roundIndex];
-            const rMass = getCharComplexity(rChar);
-            const bMass = getCharComplexity(bChar);
-            const rFinalMass = calculateFinalMass(rMass);
-            const bFinalMass = calculateFinalMass(bMass);
-            const redInitialSpin = INITIAL_SPIN_BASE + Math.random() * INITIAL_SPIN_RANDOM;
-            const blueInitialSpin = INITIAL_SPIN_BASE + Math.random() * INITIAL_SPIN_RANDOM;
-            const redFinalSpin = calculateFinalSpin(redInitialSpin, rFinalMass);
-            const blueFinalSpin = calculateFinalSpin(blueInitialSpin, bFinalMass);
-            roundPreview = {
-                red: { char: rChar, mass: rFinalMass, speed: Math.round(redFinalSpin * 1000), stability: getCharComplexity(rChar), finalSpin: redFinalSpin },
-                blue: { char: bChar, mass: bFinalMass, speed: Math.round(blueFinalSpin * 1000), stability: getCharComplexity(bChar), finalSpin: blueFinalSpin }
-            };
-            document.getElementById('preview-red-char').textContent = rChar;
-            document.getElementById('preview-blue-char').textContent = bChar;
-            const redMassScore = normalizeScore(roundPreview.red.mass, 3000, 5800);
-            const blueMassScore = normalizeScore(roundPreview.blue.mass, 3000, 5800);
-            const redSpeedScore = normalizeScore(roundPreview.red.speed, 50, 1600);
-            const blueSpeedScore = normalizeScore(roundPreview.blue.speed, 50, 1600);
-            const redStabilityScore = calculateStability(roundPreview.red.stability);
-            const blueStabilityScore = calculateStability(roundPreview.blue.stability);
-            document.getElementById('preview-red-mass').textContent = `${redMassScore} / 5`;
-            document.getElementById('preview-red-speed').textContent = `${redSpeedScore} / 5`;
-            document.getElementById('preview-red-stability').textContent = `${redStabilityScore} / 5`;
-            document.getElementById('preview-blue-mass').textContent = `${blueMassScore} / 5`;
-            document.getElementById('preview-blue-speed').textContent = `${blueSpeedScore} / 5`;
-            document.getElementById('preview-blue-stability').textContent = `${blueStabilityScore} / 5`;
-            drawRadarChart(document.getElementById('radar-red'), [redMassScore, redSpeedScore, redStabilityScore], ['质量', '速度', '稳固'], '#b9483f');
-            drawRadarChart(document.getElementById('radar-blue'), [blueMassScore, blueSpeedScore, blueStabilityScore], ['质量', '速度', '稳固'], '#35688a');
-            return true;
-        }
+			function isChinese(str) {
+				return /^[\u4e00-\u9fa5]+$/.test(str);
+			}
 
-        function showPreviewForRound(roundIndex = currentRound) {
-            if (!preparePreview(roundIndex)) {
-                previewModal.classList.add('preview-hidden');
-                return false;
-            }
-            btnStartMatch.textContent = roundIndex === 0 ? '对比完成，开始比赛' : `对比完成，开始第 ${roundIndex + 1} 回合`;
-            previewModal.classList.remove('preview-hidden');
-            return true;
-        }
+			function preparePreview(roundIndex = 0) {
+				if (!redName || !blueName || roundIndex >= redName.length) {
+					return false;
+				}
+				const rChar = redName[roundIndex];
+				const bChar = blueName[roundIndex];
+				const rMass = getCharComplexity(rChar);
+				const bMass = getCharComplexity(bChar);
+				const rFinalMass = calculateFinalMass(rMass);
+				const bFinalMass = calculateFinalMass(bMass);
+				const redInitialSpin =
+					INITIAL_SPIN_BASE + Math.random() * INITIAL_SPIN_RANDOM;
+				const blueInitialSpin =
+					INITIAL_SPIN_BASE + Math.random() * INITIAL_SPIN_RANDOM;
+				const redFinalSpin = calculateFinalSpin(redInitialSpin, rFinalMass);
+				const blueFinalSpin = calculateFinalSpin(blueInitialSpin, bFinalMass);
+				roundPreview = {
+					red: {
+						char: rChar,
+						mass: rFinalMass,
+						speed: Math.round(redFinalSpin * 1000),
+						stability: getCharComplexity(rChar),
+						finalSpin: redFinalSpin,
+					},
+					blue: {
+						char: bChar,
+						mass: bFinalMass,
+						speed: Math.round(blueFinalSpin * 1000),
+						stability: getCharComplexity(bChar),
+						finalSpin: blueFinalSpin,
+					},
+				};
+				document.getElementById("preview-red-char").textContent = rChar;
+				document.getElementById("preview-blue-char").textContent = bChar;
+				const redMassScore = normalizeScore(roundPreview.red.mass, 3000, 5800);
+				const blueMassScore = normalizeScore(
+					roundPreview.blue.mass,
+					3000,
+					5800,
+				);
+				const redSpeedScore = normalizeScore(roundPreview.red.speed, 50, 1600);
+				const blueSpeedScore = normalizeScore(
+					roundPreview.blue.speed,
+					50,
+					1600,
+				);
+				const redStabilityScore = calculateStability(
+					roundPreview.red.stability,
+				);
+				const blueStabilityScore = calculateStability(
+					roundPreview.blue.stability,
+				);
+				document.getElementById("preview-red-mass").textContent =
+					`${redMassScore} / 5`;
+				document.getElementById("preview-red-speed").textContent =
+					`${redSpeedScore} / 5`;
+				document.getElementById("preview-red-stability").textContent =
+					`${redStabilityScore} / 5`;
+				document.getElementById("preview-blue-mass").textContent =
+					`${blueMassScore} / 5`;
+				document.getElementById("preview-blue-speed").textContent =
+					`${blueSpeedScore} / 5`;
+				document.getElementById("preview-blue-stability").textContent =
+					`${blueStabilityScore} / 5`;
+				drawRadarChart(
+					document.getElementById("radar-red"),
+					[redMassScore, redSpeedScore, redStabilityScore],
+					["质量", "速度", "稳固"],
+					"#b9483f",
+				);
+				drawRadarChart(
+					document.getElementById("radar-blue"),
+					[blueMassScore, blueSpeedScore, blueStabilityScore],
+					["质量", "速度", "稳固"],
+					"#35688a",
+				);
+				return true;
+			}
 
-        btnGotoBattle.addEventListener('click', () => {
-            const rName = document.getElementById('red-name').value.trim();
-            const bName = document.getElementById('blue-name').value.trim();
-            if (rName.length < 1 || rName.length > 5 || bName.length < 1 || bName.length > 5) {
-                errorMsg.textContent = '犯规：字数必须在 1 到 5 个字符之间！';
-                return;
-            }
-            if (!isChinese(rName) || !isChinese(bName)) {
-                errorMsg.textContent = '犯规：必须输入纯汉字！';
-                return;
-            }
-            if (rName.length !== bName.length) {
-                errorMsg.textContent = `犯规：双方字数必须对等！(红${rName.length}，蓝${bName.length})`;
-                return;
-            }
-            redName = rName;
-            blueName = bName;
-            errorMsg.textContent = '';
-            currentRound = 0;
-            score = { red: 0, blue: 0 };
-            buildRosterUI();
-            updateScoreboard();
-            preparePreview();
-            pageInput.style.display = 'none';
-            previewModal.classList.remove('preview-hidden');
-        });
+			function showPreviewForRound(roundIndex = currentRound) {
+				if (!preparePreview(roundIndex)) {
+					previewModal.classList.add("preview-hidden");
+					return false;
+				}
+				btnStartMatch.textContent =
+					roundIndex === 0
+						? "对比完成，开始比赛"
+						: `对比完成，开始第 ${roundIndex + 1} 回合`;
+				previewModal.classList.remove("preview-hidden");
+				return true;
+			}
 
-        btnPreviewClose.addEventListener('click', () => {
-            previewModal.classList.add('preview-hidden');
-            if (pageBattle.style.display === 'none') {
-                pageInput.style.display = 'flex';
-            }
-        });
+			btnGotoBattle.addEventListener("click", () => {
+				const rName = document.getElementById("red-name").value.trim();
+				const bName = document.getElementById("blue-name").value.trim();
+				if (
+					rName.length < 1 ||
+					rName.length > 5 ||
+					bName.length < 1 ||
+					bName.length > 5
+				) {
+					errorMsg.textContent = "犯规：字数必须在 1 到 5 个字符之间！";
+					return;
+				}
+				if (!isChinese(rName) || !isChinese(bName)) {
+					errorMsg.textContent = "犯规：必须输入纯汉字！";
+					return;
+				}
+				if (rName.length !== bName.length) {
+					errorMsg.textContent = `犯规：双方字数必须对等！(红${rName.length}，蓝${bName.length})`;
+					return;
+				}
+				redName = rName;
+				blueName = bName;
+				errorMsg.textContent = "";
+				currentRound = 0;
+				score = { red: 0, blue: 0 };
+				buildRosterUI();
+				updateScoreboard();
+				preparePreview();
+				pageInput.style.display = "none";
+				previewModal.classList.remove("preview-hidden");
+			});
 
-        btnStartMatch.addEventListener('click', () => {
-            previewModal.classList.add('preview-hidden');
-            pageBattle.style.display = 'block';
-            statusEl.textContent = '准备就绪';
-            btnNextRound.textContent = '开始第 1 回合';
-            btnNextRound.style.display = 'block';
-            if (!engine) {
-                initPhysics();
-            }
-            requestAnimationFrame(fitBattleScale);
-            startNextRound();
-        });
+			btnPreviewClose.addEventListener("click", () => {
+				previewModal.classList.add("preview-hidden");
+				if (pageBattle.style.display === "none") {
+					pageInput.style.display = "flex";
+				}
+			});
 
-        function cleanupBattleState() {
-            if (render) {
-                Render.stop(render);
-            }
-            if (runner) {
-                Runner.stop(runner);
-            }
-            if (engine) {
-                engine.events = {};
-            }
-            if (gameContainer) {
-                gameContainer.innerHTML = '';
-            }
-            const inner = document.getElementById('battle-scale-inner');
-            const outer = document.getElementById('battle-scale-outer');
-            if (inner) {
-                inner.style.transform = 'none';
-            }
-            if (outer) {
-                outer.style.height = 'auto';
-            }
-            engine = null;
-            render = null;
-            runner = null;
-            activeBodies = [];
-            sparks = [];
-            trackedBody = { red: null, blue: null };
-            gameState = 'IDLE';
-            btnNextRound.disabled = false;
-            btnNextRound.textContent = '开始回合';
-            statusEl.textContent = '等待开战...';
-        }
+			btnStartMatch.addEventListener("click", () => {
+				previewModal.classList.add("preview-hidden");
+				pageBattle.style.display = "block";
+				statusEl.textContent = "准备就绪";
+				btnNextRound.textContent = "开始第 1 回合";
+				btnNextRound.style.display = "block";
+				if (!engine) {
+					initPhysics();
+				}
+				requestAnimationFrame(fitBattleScale);
+				startNextRound();
+			});
 
-        function resetBattleState() {
-            cleanupBattleState();
-            currentRound = 0;
-            score = { red: 0, blue: 0 };
-            redName = '';
-            blueName = '';
-            if (document.getElementById('roster-red')) {
-                document.getElementById('roster-red').innerHTML = '';
-            }
-            if (document.getElementById('roster-blue')) {
-                document.getElementById('roster-blue').innerHTML = '';
-            }
-            if (document.getElementById('red-name')) {
-                document.getElementById('red-name').value = '';
-            }
-            if (document.getElementById('blue-name')) {
-                document.getElementById('blue-name').value = '';
-            }
-            if (errorMsg) {
-                errorMsg.textContent = '';
-            }
-            updateScoreboard();
-        }
+			function cleanupBattleState() {
+				if (render) {
+					Render.stop(render);
+				}
+				if (runner) {
+					Runner.stop(runner);
+				}
+				if (engine) {
+					engine.events = {};
+				}
+				if (gameContainer) {
+					gameContainer.innerHTML = "";
+				}
+				const inner = document.getElementById("battle-scale-inner");
+				const outer = document.getElementById("battle-scale-outer");
+				if (inner) {
+					inner.style.transform = "none";
+				}
+				if (outer) {
+					outer.style.height = "auto";
+				}
+				engine = null;
+				render = null;
+				runner = null;
+				activeBodies = [];
+				sparks = [];
+				trackedBody = { red: null, blue: null };
+				gameState = "IDLE";
+				btnNextRound.disabled = false;
+				btnNextRound.textContent = "开始回合";
+				statusEl.textContent = "等待开战...";
+			}
 
-        function resetToInputPage() {
-            resetBattleState();
-            pageBattle.style.display = 'none';
-            pageInput.style.display = 'flex';
-        }
+			function resetBattleState() {
+				cleanupBattleState();
+				currentRound = 0;
+				score = { red: 0, blue: 0 };
+				redName = "";
+				blueName = "";
+				if (document.getElementById("roster-red")) {
+					document.getElementById("roster-red").innerHTML = "";
+				}
+				if (document.getElementById("roster-blue")) {
+					document.getElementById("roster-blue").innerHTML = "";
+				}
+				if (document.getElementById("red-name")) {
+					document.getElementById("red-name").value = "";
+				}
+				if (document.getElementById("blue-name")) {
+					document.getElementById("blue-name").value = "";
+				}
+				if (errorMsg) {
+					errorMsg.textContent = "";
+				}
+				updateScoreboard();
+			}
 
-        btnBackInput.addEventListener('click', () => {
-            cleanupBattleState();
-            pageBattle.style.display = 'none';
-            pageInput.style.display = 'flex';
-        });
- 
-        btnNextRound.addEventListener('click', () => {
-            if (gameState === 'ROUND_OVER') {
-                if (currentRound < redName.length) {
-                    showPreviewForRound(currentRound);
-                } else {
-                    previewModal.classList.add('preview-hidden');
-                }
-            }
-        });
+			function resetToInputPage() {
+				resetBattleState();
+				pageBattle.style.display = "none";
+				pageInput.style.display = "flex";
+			}
 
-        function buildRosterUI() {
-            let rr = '',
-                rb = '';
-            for (let i = 0; i < redName.length; i++) {
-                rr += `<span id="r-char-${i}" class="char-box">${redName[i]}</span>`;
-                rb += `<span id="b-char-${i}" class="char-box">${blueName[i]}</span>`;
-            }
-            document.getElementById('roster-red').innerHTML = rr;
-            document.getElementById('roster-blue').innerHTML = rb;
-        }
+			btnBackInput.addEventListener("click", () => {
+				cleanupBattleState();
+				pageBattle.style.display = "none";
+				pageInput.style.display = "flex";
+			});
 
-        function updateRosterHighlight() {
-            for (let i = 0; i < redName.length; i++) {
-                document.getElementById(`r-char-${i}`).className = 'char-box';
-                document.getElementById(`b-char-${i}`).className = 'char-box';
-            }
-            if (currentRound < redName.length) {
-                document.getElementById(`r-char-${currentRound}`).classList.add('red-active');
-                document.getElementById(`b-char-${currentRound}`).classList.add('blue-active');
-            }
-        }
+			btnNextRound.addEventListener("click", () => {
+				if (gameState === "ROUND_OVER") {
+					if (currentRound < redName.length) {
+						showPreviewForRound(currentRound);
+					} else {
+						previewModal.classList.add("preview-hidden");
+					}
+				}
+			});
 
-        function updateScoreboard() {
-            document.getElementById('score-red').textContent = score.red;
-            document.getElementById('score-blue').textContent = score.blue;
-        }
+			function buildRosterUI() {
+				let rr = "",
+					rb = "";
+				for (let i = 0; i < redName.length; i++) {
+					rr += `<span id="r-char-${i}" class="char-box">${redName[i]}</span>`;
+					rb += `<span id="b-char-${i}" class="char-box">${blueName[i]}</span>`;
+				}
+				document.getElementById("roster-red").innerHTML = rr;
+				document.getElementById("roster-blue").innerHTML = rb;
+			}
 
-        function startNextRound() {
-            if (currentRound >= redName.length) {
-                gameState = 'GAME_OVER';
-                let winner = score.red > score.blue ? '红方获胜！' : (score.blue > score.red ? '蓝方获胜！' : '平局！');
-                statusEl.textContent = `比赛结束，${winner}`;
-                btnNextRound.style.display = 'none';
-                if (score.red !== score.blue) {
-                    celebrateMatchWinner();
-                    setTimeout(() => {
-                        resetToInputPage();
-                    }, 2200);
-                }
-                return;
-            }
-            gameState = 'PLAYING';
-            btnNextRound.disabled = true;
-            let rChar = redName[currentRound],
-                bChar = blueName[currentRound];
-            let rMass = getCharComplexity(rChar),
-                bMass = getCharComplexity(bChar);
- 
-            // 【新增】计算实际物理质量用于显示
-            let rFinalMass = calculateFinalMass(rMass);
-            let bFinalMass = calculateFinalMass(bMass);
+			function updateRosterHighlight() {
+				for (let i = 0; i < redName.length; i++) {
+					document.getElementById(`r-char-${i}`).className = "char-box";
+					document.getElementById(`b-char-${i}`).className = "char-box";
+				}
+				if (currentRound < redName.length) {
+					document
+						.getElementById(`r-char-${currentRound}`)
+						.classList.add("red-active");
+					document
+						.getElementById(`b-char-${currentRound}`)
+						.classList.add("blue-active");
+				}
+			}
 
-            statusEl.innerHTML = `第 ${currentRound + 1} 回合... <span style="font-size:0.8rem"> (红质:${rFinalMass} 蓝质:${bFinalMass})</span>`;
-            updateRosterHighlight();
-            spawnTops(rChar, bChar, rMass, bMass);
-            roundStartTime = Date.now();
-            currentRound++;
-        }
+			function updateScoreboard() {
+				document.getElementById("score-red").textContent = score.red;
+				document.getElementById("score-blue").textContent = score.blue;
+			}
 
-        function initPhysics() {
-            engine = Engine.create({ gravity: { x: 0, y: 0 } });
-            render = Render.create({
-                element: gameContainer,
-                engine: engine,
-                options: { width: width, height: height, wireframes: false, background: 'transparent' }
-            });
-            const parts = [];
-            for (let i = 0; i < 36; i++) {
-                const angle = (i / 36) * Math.PI * 2;
-                parts.push(Bodies.rectangle(
-                    cx + Math.cos(angle) * radius, cy + Math.sin(angle) * radius,
-                    60, 30, { isStatic: true, angle: angle, render: { visible: false } }
-                ));
-            }
-            Composite.add(engine.world, parts);
+			function startNextRound() {
+				if (currentRound >= redName.length) {
+					gameState = "GAME_OVER";
+					let winner =
+						score.red > score.blue
+							? "红方获胜！"
+							: score.blue > score.red
+								? "蓝方获胜！"
+								: "平局！";
+					statusEl.textContent = `比赛结束，${winner}`;
+					btnNextRound.style.display = "none";
+					if (score.red !== score.blue) {
+						celebrateMatchWinner();
+						setTimeout(() => {
+							resetToInputPage();
+						}, 2200);
+					}
+					return;
+				}
+				gameState = "PLAYING";
+				btnNextRound.disabled = true;
+				let rChar = redName[currentRound],
+					bChar = blueName[currentRound];
+				let rMass = getCharComplexity(rChar),
+					bMass = getCharComplexity(bChar);
 
-            Events.on(render, 'afterRender', function() {
-                const ctx = render.context;
-                activeBodies.forEach(body => {
-                    ctx.save();
-                    ctx.globalAlpha = body.isActiveTop ? 1.0 : 0.4;
-                    ctx.translate(body.position.x, body.position.y);
-                    ctx.rotate(body.angle);
-                    const speed = Math.abs(body.angularVelocity);
-                    if (speed > 0.1 && body.isActiveTop) {
-                        ctx.transform(1, 0, speed * 0.3 * Math.sin(engine.timing.timestamp * 0.01), 1, 0, 0);
-                    }
-                    if (body.isFragment) {
-                        ctx.beginPath();
-                        let fw = body.customStyle.fragW || BASE_SIZE / 2;
-                        let fh = body.customStyle.fragH || BASE_SIZE / 2;
-                        ctx.rect(-fw / 2, -fh / 2, fw, fh);
-                        ctx.clip();
-                        ctx.translate(-body.customStyle.offsetX, -body.customStyle.offsetY);
-                    }
-                    ctx.font = `bold ${FONT_SIZE}px 'Source Serif Pro', Georgia, serif`;
-                    ctx.textAlign = "center";
-                    ctx.textBaseline = "middle";
-                    ctx.fillStyle = body.customStyle.depthColor;
-                    for (let i = 1; i <= 10; i++) { ctx.fillText(body.customStyle.char, -i, i); }
-                    ctx.fillStyle = body.customStyle.faceColor;
-                    ctx.fillText(body.customStyle.char, 0, 0);
-                    if (speed < 0.1 && speed > 0.01 && !body.isFragment) {
-                        ctx.beginPath();
-                        ctx.moveTo(0, -15);
-                        ctx.lineTo(10, 10);
-                        ctx.lineTo(-15, 20);
-                        ctx.strokeStyle = 'rgba(255,255,255,0.8)';
-                        ctx.lineWidth = 1.5;
-                        ctx.stroke();
-                    }
-                    ctx.restore();
-                    if (body.isLargest && body.isActiveTop) {
-                        ctx.save();
-                        ctx.beginPath();
-                        ctx.setLineDash([4, 4]);
-                        ctx.strokeStyle = body.customStyle.team === 'red' ? 'rgba(169,53,46,0.5)' :
-                            'rgba(40,87,119,0.5)';
-                        ctx.lineWidth = 2;
-                        ctx.arc(body.position.x, body.position.y, BASE_SIZE * 0.6, 0, Math.PI * 2);
-                        ctx.stroke();
-                        ctx.restore();
-                    }
-                });
-                for (let i = sparks.length - 1; i >= 0; i--) {
-                    let p = sparks[i];
-                    ctx.globalAlpha = p.life;
-                    ctx.fillStyle = '#ffb347';
-                    ctx.beginPath();
-                    ctx.arc(p.x, p.y, p.size, 0, 2 * Math.PI);
-                    ctx.fill();
-                    p.x += p.vx;
-                    p.y += p.vy;
-                    p.life -= 0.05;
-                    if (p.life <= 0) sparks.splice(i, 1);
-                }
-                ctx.globalAlpha = 1.0;
-            });
+				// 【新增】计算实际物理质量用于显示
+				let rFinalMass = calculateFinalMass(rMass);
+				let bFinalMass = calculateFinalMass(bMass);
 
-            let toShatter = new Set();
-            Events.on(engine, 'collisionStart', function(event) {
-                if (gameState !== 'PLAYING') return;
-                event.pairs.forEach(pair => {
-                    let A = pair.bodyA,
-                        B = pair.bodyB;
-                    if (A.isTopPart && B.isTopPart) {
-                        const collisionPoint = pair.collision.supports[0] || A.position;
-                        for (let i = 0; i < 8; i++) {
-                            sparks.push({
-                                x: collisionPoint.x,
-                                y: collisionPoint.y,
-                                vx: (Math.random() - 0.5) * 12,
-                                vy: (Math.random() - 0.5) * 12,
-                                life: 1.0,
-                                size: Math.random() * 3 + 1
-                            });
-                        }
-                        const stressScore = estimateCollisionStress(A, B);
-                        if (!A.isFragment && A.isActiveTop && shouldShatter(A, stressScore)) toShatter.add(A);
-                        if (!B.isFragment && B.isActiveTop && shouldShatter(B, stressScore)) toShatter.add(B);
-                        Body.setAngularVelocity(A, A.angularVelocity * COLLISION_RETAIN);
-                        Body.setAngularVelocity(B, B.angularVelocity * COLLISION_RETAIN);
-                    }
-                });
-                toShatter.forEach(b => shatterBody(b));
-                toShatter.clear();
-            });
+				statusEl.innerHTML = `第 ${currentRound + 1} 回合... <span style="font-size:0.8rem"> (红质:${rFinalMass} 蓝质:${bFinalMass})</span>`;
+				updateRosterHighlight();
+				spawnTops(rChar, bChar, rMass, bMass);
+				roundStartTime = Date.now();
+				currentRound++;
+			}
 
-            Events.on(engine, 'beforeUpdate', function() {
-                if (gameState === 'PLAYING') {
-                    activeBodies.forEach(body => {
-                        if (!body.isActiveTop) return;
-                        // 盆地引力
-                        let dx = cx - body.position.x;
-                        let dy = cy - body.position.y;
-                        let dist = Math.sqrt(dx * dx + dy * dy);
-                        if (dist > 30) {
-                            let force = 0.00012 * body.mass;
-                            Body.applyForce(body, body.position, { x: (dx / dist) * force, y: (dy / dist) *
-                                    force });
-                        }
-                        // 转速衰减，并强制归零
-                        let massFactor = 1;
-                        if (body.customStyle.coreMass) {
-                            let normalizedMass = Math.min(1, body.customStyle.coreMass / (BASE_SIZE * BASE_SIZE * 0.08));
-                            massFactor = 0.98 + 0.02 * normalizedMass;
-                        }
-                        let newAngVel = body.angularVelocity * body.customStyle.spinRetain * getExtraDecayFactor(body.angularVelocity) * massFactor;
-                        if (Math.abs(newAngVel) < FINAL_ZERO_THRESHOLD) {
-                            newAngVel = 0;
-                            body.isActiveTop = false; // 直接标记为停止旋转
-                        }
-                        Body.setAngularVelocity(body, newAngVel);
-                        // 平移速度衰减，转速为0时立即归零
-                        let spinRatio = Math.min(1, Math.abs(body.angularVelocity) / (body.customStyle.initialSpin || 1));
-                        let spinLinearFactorPerSecond = Math.pow(spinRatio, SPIN_LINEAR_COUPLING_POWER);
-                        let spinLinearFactorPerFrame = Math.pow(spinLinearFactorPerSecond, 1 / 60);
-                        Body.setVelocity(body, {
-                            x: body.velocity.x * LINEAR_DRAG * spinLinearFactorPerFrame,
-                            y: body.velocity.y * LINEAR_DRAG * spinLinearFactorPerFrame
-                        });
-                    });
-                    // 胜负判定：核心碎块是否完全停转
-                    if (activeBodies.length > 0 && (Date.now() - roundStartTime > 1500)) {
-                        let redCoreAlive = trackedBody.red && trackedBody.red.isActiveTop;
-                        let blueCoreAlive = trackedBody.blue && trackedBody.blue.isActiveTop;
-                        if (!redCoreAlive || !blueCoreAlive) {
-                            gameState = 'ROUND_OVER';
-                            beginRoundStopMotion();
-                            btnNextRound.disabled = false;
-                            if (currentRound >= redName.length) {
-                                btnNextRound.textContent = '查看最终结算';
-                            } else {
-                                btnNextRound.textContent = `开始第 ${currentRound + 1} 回合`;
-                            }
-                            if (redCoreAlive && !blueCoreAlive) {
-                                score.red++;
-                                statusEl.textContent = `本回合：红方【胜】（蓝方核心碎块先完全停转）`;
-                                celebrateRoundWinner('red');
-                            } else if (blueCoreAlive && !redCoreAlive) {
-                                score.blue++;
-                                statusEl.textContent = `本回合：蓝方【胜】（红方核心碎块先完全停转）`;
-                                celebrateRoundWinner('blue');
-                            } else {
-                                statusEl.textContent = `本回合：双方核心碎块同时停止，平局`;
-                            }
-                            updateScoreboard();
-                        }
-                    }
-                } else if (gameState === 'ROUND_OVER') {
-                    updateRoundStopMotion(performance.now());
-                }
-            });
+			function initPhysics() {
+				engine = Engine.create({ gravity: { x: 0, y: 0 } });
+				render = Render.create({
+					element: gameContainer,
+					engine: engine,
+					options: {
+						width: width,
+						height: height,
+						wireframes: false,
+						background: "transparent",
+					},
+				});
+				const parts = [];
+				for (let i = 0; i < 36; i++) {
+					const angle = (i / 36) * Math.PI * 2;
+					parts.push(
+						Bodies.rectangle(
+							cx + Math.cos(angle) * radius,
+							cy + Math.sin(angle) * radius,
+							60,
+							30,
+							{ isStatic: true, angle: angle, render: { visible: false } },
+						),
+					);
+				}
+				Composite.add(engine.world, parts);
 
-            Render.run(render);
-            runner = Runner.create();
-            Runner.run(runner, engine);
-        }
+				Events.on(render, "afterRender", function () {
+					const ctx = render.context;
+					activeBodies.forEach((body) => {
+						ctx.save();
+						ctx.globalAlpha = body.isActiveTop ? 1.0 : 0.4;
+						ctx.translate(body.position.x, body.position.y);
+						ctx.rotate(body.angle);
+						const speed = Math.abs(body.angularVelocity);
+						if (speed > 0.1 && body.isActiveTop) {
+							ctx.transform(
+								1,
+								0,
+								speed * 0.3 * Math.sin(engine.timing.timestamp * 0.01),
+								1,
+								0,
+								0,
+							);
+						}
+						if (body.isFragment) {
+							ctx.beginPath();
+							let fw = body.customStyle.fragW || BASE_SIZE / 2;
+							let fh = body.customStyle.fragH || BASE_SIZE / 2;
+							ctx.rect(-fw / 2, -fh / 2, fw, fh);
+							ctx.clip();
+							ctx.translate(
+								-body.customStyle.offsetX,
+								-body.customStyle.offsetY,
+							);
+						}
+						ctx.font = `bold ${FONT_SIZE}px 'Source Serif Pro', Georgia, serif`;
+						ctx.textAlign = "center";
+						ctx.textBaseline = "middle";
+						ctx.fillStyle = body.customStyle.depthColor;
+						for (let i = 1; i <= 10; i++) {
+							ctx.fillText(body.customStyle.char, -i, i);
+						}
+						ctx.fillStyle = body.customStyle.faceColor;
+						ctx.fillText(body.customStyle.char, 0, 0);
+						if (speed < 0.1 && speed > 0.01 && !body.isFragment) {
+							ctx.beginPath();
+							ctx.moveTo(0, -15);
+							ctx.lineTo(10, 10);
+							ctx.lineTo(-15, 20);
+							ctx.strokeStyle = "rgba(255,255,255,0.8)";
+							ctx.lineWidth = 1.5;
+							ctx.stroke();
+						}
+						ctx.restore();
+						if (body.isLargest && body.isActiveTop) {
+							ctx.save();
+							ctx.beginPath();
+							ctx.setLineDash([4, 4]);
+							ctx.strokeStyle =
+								body.customStyle.team === "red"
+									? "rgba(169,53,46,0.5)"
+									: "rgba(40,87,119,0.5)";
+							ctx.lineWidth = 2;
+							ctx.arc(
+								body.position.x,
+								body.position.y,
+								BASE_SIZE * 0.6,
+								0,
+								Math.PI * 2,
+							);
+							ctx.stroke();
+							ctx.restore();
+						}
+					});
+					for (let i = sparks.length - 1; i >= 0; i--) {
+						let p = sparks[i];
+						ctx.globalAlpha = p.life;
+						ctx.fillStyle = "#ffb347";
+						ctx.beginPath();
+						ctx.arc(p.x, p.y, p.size, 0, 2 * Math.PI);
+						ctx.fill();
+						p.x += p.vx;
+						p.y += p.vy;
+						p.life -= 0.05;
+						if (p.life <= 0) sparks.splice(i, 1);
+					}
+					ctx.globalAlpha = 1.0;
+				});
 
-        function skewedSplitRatio() {
-            let u = Math.random();
-            let arcsine = (1 - Math.cos(Math.PI * u)) / 2;
-            if (arcsine < 0.5) {
-                return 0.5 * Math.pow(arcsine * 2, SHATTER_EXTREME_POWER);
-            } else {
-                return 1 - 0.5 * Math.pow((1 - arcsine) * 2, SHATTER_EXTREME_POWER);
-            }
-        }  // TODO: 让碎裂的形状更不规则，增加随机性
+				let toShatter = new Set();
+				Events.on(engine, "collisionStart", function (event) {
+					if (gameState !== "PLAYING") return;
+					event.pairs.forEach((pair) => {
+						let A = pair.bodyA,
+							B = pair.bodyB;
+						if (A.isTopPart && B.isTopPart) {
+							const collisionPoint = pair.collision.supports[0] || A.position;
+							for (let i = 0; i < 8; i++) {
+								sparks.push({
+									x: collisionPoint.x,
+									y: collisionPoint.y,
+									vx: (Math.random() - 0.5) * 12,
+									vy: (Math.random() - 0.5) * 12,
+									life: 1.0,
+									size: Math.random() * 3 + 1,
+								});
+							}
+							const stressScore = estimateCollisionStress(A, B);
+							if (
+								!A.isFragment &&
+								A.isActiveTop &&
+								shouldShatter(A, stressScore)
+							)
+								toShatter.add(A);
+							if (
+								!B.isFragment &&
+								B.isActiveTop &&
+								shouldShatter(B, stressScore)
+							)
+								toShatter.add(B);
+							Body.setAngularVelocity(A, A.angularVelocity * COLLISION_RETAIN);
+							Body.setAngularVelocity(B, B.angularVelocity * COLLISION_RETAIN);
+						}
+					});
+					toShatter.forEach((b) => shatterBody(b));
+					toShatter.clear();
+				});
 
-        function shatterBody(body) {
-            if (!body.isActiveTop) return;
-            const half = BASE_SIZE / 2;
-            const MIN_FRAG = 6;
-            let rx = skewedSplitRatio();
-            let ry = skewedSplitRatio();
-            let pivotX = -half + rx * BASE_SIZE;
-            let pivotY = -half + ry * BASE_SIZE;
-            pivotX = Math.max(-half + MIN_FRAG, Math.min(half - MIN_FRAG, pivotX));
-            pivotY = Math.max(-half + MIN_FRAG, Math.min(half - MIN_FRAG, pivotY));
-            const rawFrags = [
-                { w: pivotX - (-half), h: pivotY - (-half), ox: (-half + pivotX) / 2, oy: (-half + pivotY) / 2 },
-                { w: half - pivotX, h: pivotY - (-half), ox: (pivotX + half) / 2, oy: (-half + pivotY) / 2 },
-                { w: pivotX - (-half), h: half - pivotY, ox: (-half + pivotX) / 2, oy: (pivotY + half) / 2 },
-                { w: half - pivotX, h: half - pivotY, ox: (pivotX + half) / 2, oy: (pivotY + half) / 2 }
-            ];
-            let maxArea = -1,
-                maxIndex = 0;
-            rawFrags.forEach((f, i) => {
-                let area = f.w * f.h;
-                if (area > maxArea) { maxArea = area;
-                    maxIndex = i; }
-            });
-            let avgArea = (BASE_SIZE * BASE_SIZE) / 4;
-            let coreMass = body.density * maxArea;
-            let frags = [];
-            let cos = Math.cos(body.angle),
-                sin = Math.sin(body.angle);
-            rawFrags.forEach((f, i) => {
-                let worldX = body.position.x + f.ox * cos - f.oy * sin;
-                let worldY = body.position.y + f.ox * sin + f.oy * cos;
-                let frag = Bodies.rectangle(worldX, worldY, f.w, f.h, {
-                    restitution: 0.18,
-                    friction: 0.04,
-                    frictionAir: 0.006,
-                    density: body.density,
-                    angle: body.angle,
-                    render: { visible: false }
-                });
-                frag.isActiveTop = true;
-                frag.isTopPart = true;
-                frag.isFragment = true;
-                frag.isLargest = (i === maxIndex);
-                let sizeRatio = (f.w * f.h) / avgArea;
-                let fragCoreMass = body.density * f.w * f.h;
-                frag.customStyle = {
-                    ...body.customStyle,
-                    offsetX: f.ox,
-                    offsetY: f.oy,
-                    fragW: f.w,
-                    fragH: f.h,
-                    coreMass: fragCoreMass,
-                    spinRetain: body.customStyle.spinRetain * (0.92 + 0.08 * Math.min(1, sizeRatio))
-                };
-                let explodeGain = 1 / Math.max(0.25, sizeRatio);
-                explodeGain = Math.min(explodeGain, 3);
-                Body.setVelocity(frag, {
-                    x: body.velocity.x + f.ox * cos * 0.04 * explodeGain,
-                    y: body.velocity.y + f.oy * cos * 0.04 * explodeGain
-                });
-                if (frag.isLargest) {
-                    Body.setAngularVelocity(frag, body.angularVelocity * 0.96 + (Math.random() - 0.5) * 0.15);
-                } else {
-                    let inertiaFactor = Math.max(0.78, Math.min(1, sizeRatio));
-                    Body.setAngularVelocity(frag, body.angularVelocity * inertiaFactor + (Math.random() - 0.5) * 0.25);
-                }
-                frags.push(frag);
-            });
-            if (trackedBody[body.customStyle.team] === body) {
-                trackedBody[body.customStyle.team] = frags[maxIndex];
-                trackedBody[body.customStyle.team].customStyle.coreMass = coreMass;
-            }
-            Composite.remove(engine.world, body);
-            activeBodies = activeBodies.filter(b => b !== body);
-            Composite.add(engine.world, frags);
-            activeBodies.push(...frags);
-        }
+				Events.on(engine, "beforeUpdate", function () {
+					if (gameState === "PLAYING") {
+						activeBodies.forEach((body) => {
+							if (!body.isActiveTop) return;
+							// 盆地引力
+							let dx = cx - body.position.x;
+							let dy = cy - body.position.y;
+							let dist = Math.sqrt(dx * dx + dy * dy);
+							if (dist > 30) {
+								let force = 0.00012 * body.mass;
+								Body.applyForce(body, body.position, {
+									x: (dx / dist) * force,
+									y: (dy / dist) * force,
+								});
+							}
+							// 转速衰减，并强制归零
+							let massFactor = 1;
+							if (body.customStyle.coreMass) {
+								let normalizedMass = Math.min(
+									1,
+									body.customStyle.coreMass / (BASE_SIZE * BASE_SIZE * 0.08),
+								);
+								massFactor = 0.98 + 0.02 * normalizedMass;
+							}
+							let newAngVel =
+								body.angularVelocity *
+								body.customStyle.spinRetain *
+								getExtraDecayFactor(body.angularVelocity) *
+								massFactor;
+							if (Math.abs(newAngVel) < FINAL_ZERO_THRESHOLD) {
+								newAngVel = 0;
+								body.isActiveTop = false; // 直接标记为停止旋转
+							}
+							Body.setAngularVelocity(body, newAngVel);
+							// 平移速度衰减，转速为0时立即归零
+							let spinRatio = Math.min(
+								1,
+								Math.abs(body.angularVelocity) /
+									(body.customStyle.initialSpin || 1),
+							);
+							let spinLinearFactorPerSecond = Math.pow(
+								spinRatio,
+								SPIN_LINEAR_COUPLING_POWER,
+							);
+							let spinLinearFactorPerFrame = Math.pow(
+								spinLinearFactorPerSecond,
+								1 / 60,
+							);
+							Body.setVelocity(body, {
+								x: body.velocity.x * LINEAR_DRAG * spinLinearFactorPerFrame,
+								y: body.velocity.y * LINEAR_DRAG * spinLinearFactorPerFrame,
+							});
+						});
+						// 胜负判定：核心碎块是否完全停转
+						if (activeBodies.length > 0 && Date.now() - roundStartTime > 1500) {
+							let redCoreAlive = trackedBody.red && trackedBody.red.isActiveTop;
+							let blueCoreAlive =
+								trackedBody.blue && trackedBody.blue.isActiveTop;
+							if (!redCoreAlive || !blueCoreAlive) {
+								gameState = "ROUND_OVER";
+								beginRoundStopMotion();
+								btnNextRound.disabled = false;
+								if (currentRound >= redName.length) {
+									btnNextRound.textContent = "查看最终结算";
+								} else {
+									btnNextRound.textContent = `开始第 ${currentRound + 1} 回合`;
+								}
+								if (redCoreAlive && !blueCoreAlive) {
+									score.red++;
+									statusEl.textContent = `本回合：红方【胜】（蓝方核心碎块先完全停转）`;
+									celebrateRoundWinner("red");
+								} else if (blueCoreAlive && !redCoreAlive) {
+									score.blue++;
+									statusEl.textContent = `本回合：蓝方【胜】（红方核心碎块先完全停转）`;
+									celebrateRoundWinner("blue");
+								} else {
+									statusEl.textContent = `本回合：双方核心碎块同时停止，平局`;
+								}
+								updateScoreboard();
+							}
+						}
+					} else if (gameState === "ROUND_OVER") {
+						updateRoundStopMotion(performance.now());
+					}
+				});
 
-        function spawnTops(rChar, bChar, rMass, bMass) {
-            activeBodies.forEach(b => Composite.remove(engine.world, b));
-            activeBodies = [];
-            sparks = [];
-            let rDensity = 0.08 * (rMass / 1200);
-            let bDensity = 0.08 * (bMass / 1200);
-            let rRetain = Math.min(0.9998, 0.993 + (rMass / 3000) * 0.004);
-            let bRetain = Math.min(0.9998, 0.993 + (bMass / 3000) * 0.004);
-            const buildOptions = (density) => ({
-                restitution: 0.12,
-                friction: 0.04,
-                frictionAir: 0.001,
-                density: density,
-                render: { visible: false }
-            });
-            let rFinalMass = calculateFinalMass(rMass);
-            let bFinalMass = calculateFinalMass(bMass);
-            let redInitialSpin = INITIAL_SPIN_BASE + Math.random() * INITIAL_SPIN_RANDOM;
-            let blueInitialSpin = INITIAL_SPIN_BASE + Math.random() * INITIAL_SPIN_RANDOM;
-            let redFinalSpin = (roundPreview && roundPreview.red && currentRound === 0)
-                ? roundPreview.red.finalSpin
-                : calculateFinalSpin(redInitialSpin, rFinalMass);
-            let blueFinalSpin = (roundPreview && roundPreview.blue && currentRound === 0)
-                ? roundPreview.blue.finalSpin
-                : calculateFinalSpin(blueInitialSpin, bFinalMass);
-            let redBody = Bodies.rectangle(cx - 150, cy, BASE_SIZE, BASE_SIZE, buildOptions(rDensity));
-            redBody.isActiveTop = true;
-            redBody.isTopPart = true;
-            redBody.isFragment = false;
-            redBody.isLargest = true;
-            redBody.customStyle = { char: rChar, team: 'red', faceColor: '#a9352e', depthColor: '#7a231e', spinRetain: rRetain,
-                initialSpin: redFinalSpin, coreMass: rDensity * BASE_SIZE * BASE_SIZE };
-            Body.setAngularVelocity(redBody, redFinalSpin);
-            Body.setVelocity(redBody, { x: 1.2, y: (Math.random() - 0.5) * 0.8 });
-            let blueBody = Bodies.rectangle(cx + 150, cy, BASE_SIZE, BASE_SIZE, buildOptions(bDensity));
-            blueBody.isActiveTop = true;
-            blueBody.isTopPart = true;
-            blueBody.isFragment = false;
-            blueBody.isLargest = true;
-            blueBody.customStyle = { char: bChar, team: 'blue', faceColor: '#285777', depthColor: '#17364c',
-                spinRetain: bRetain, initialSpin: blueFinalSpin, coreMass: bDensity * BASE_SIZE * BASE_SIZE };
-            Body.setAngularVelocity(blueBody, -blueFinalSpin);
-            Body.setVelocity(blueBody, { x: -1.2, y: (Math.random() - 0.5) * 0.8 });
-            trackedBody.red = redBody;
-            trackedBody.blue = blueBody;
-            activeBodies.push(redBody, blueBody);
-            Composite.add(engine.world, activeBodies);
-        }
-    </script>
-</body>
+				Render.run(render);
+				runner = Runner.create();
+				Runner.run(runner, engine);
+			}
+
+			function skewedSplitRatio() {
+				let u = Math.random();
+				let arcsine = (1 - Math.cos(Math.PI * u)) / 2;
+				if (arcsine < 0.5) {
+					return 0.5 * Math.pow(arcsine * 2, SHATTER_EXTREME_POWER);
+				} else {
+					return 1 - 0.5 * Math.pow((1 - arcsine) * 2, SHATTER_EXTREME_POWER);
+				}
+			} // TODO: 让碎裂的形状更不规则，增加随机性
+
+			function shatterBody(body) {
+				if (!body.isActiveTop) return;
+				const half = BASE_SIZE / 2;
+				const MIN_FRAG = 6;
+				let rx = skewedSplitRatio();
+				let ry = skewedSplitRatio();
+				let pivotX = -half + rx * BASE_SIZE;
+				let pivotY = -half + ry * BASE_SIZE;
+				pivotX = Math.max(-half + MIN_FRAG, Math.min(half - MIN_FRAG, pivotX));
+				pivotY = Math.max(-half + MIN_FRAG, Math.min(half - MIN_FRAG, pivotY));
+				const rawFrags = [
+					{
+						w: pivotX - -half,
+						h: pivotY - -half,
+						ox: (-half + pivotX) / 2,
+						oy: (-half + pivotY) / 2,
+					},
+					{
+						w: half - pivotX,
+						h: pivotY - -half,
+						ox: (pivotX + half) / 2,
+						oy: (-half + pivotY) / 2,
+					},
+					{
+						w: pivotX - -half,
+						h: half - pivotY,
+						ox: (-half + pivotX) / 2,
+						oy: (pivotY + half) / 2,
+					},
+					{
+						w: half - pivotX,
+						h: half - pivotY,
+						ox: (pivotX + half) / 2,
+						oy: (pivotY + half) / 2,
+					},
+				];
+				let maxArea = -1,
+					maxIndex = 0;
+				rawFrags.forEach((f, i) => {
+					let area = f.w * f.h;
+					if (area > maxArea) {
+						maxArea = area;
+						maxIndex = i;
+					}
+				});
+				let avgArea = (BASE_SIZE * BASE_SIZE) / 4;
+				let coreMass = body.density * maxArea;
+				let frags = [];
+				let cos = Math.cos(body.angle),
+					sin = Math.sin(body.angle);
+				rawFrags.forEach((f, i) => {
+					let worldX = body.position.x + f.ox * cos - f.oy * sin;
+					let worldY = body.position.y + f.ox * sin + f.oy * cos;
+					let frag = Bodies.rectangle(worldX, worldY, f.w, f.h, {
+						restitution: 0.18,
+						friction: 0.04,
+						frictionAir: 0.006,
+						density: body.density,
+						angle: body.angle,
+						render: { visible: false },
+					});
+					frag.isActiveTop = true;
+					frag.isTopPart = true;
+					frag.isFragment = true;
+					frag.isLargest = i === maxIndex;
+					let sizeRatio = (f.w * f.h) / avgArea;
+					let fragCoreMass = body.density * f.w * f.h;
+					frag.customStyle = {
+						...body.customStyle,
+						offsetX: f.ox,
+						offsetY: f.oy,
+						fragW: f.w,
+						fragH: f.h,
+						coreMass: fragCoreMass,
+						spinRetain:
+							body.customStyle.spinRetain *
+							(0.92 + 0.08 * Math.min(1, sizeRatio)),
+					};
+					let explodeGain = 1 / Math.max(0.25, sizeRatio);
+					explodeGain = Math.min(explodeGain, 3);
+					Body.setVelocity(frag, {
+						x: body.velocity.x + f.ox * cos * 0.04 * explodeGain,
+						y: body.velocity.y + f.oy * cos * 0.04 * explodeGain,
+					});
+					if (frag.isLargest) {
+						Body.setAngularVelocity(
+							frag,
+							body.angularVelocity * 0.96 + (Math.random() - 0.5) * 0.15,
+						);
+					} else {
+						let inertiaFactor = Math.max(0.78, Math.min(1, sizeRatio));
+						Body.setAngularVelocity(
+							frag,
+							body.angularVelocity * inertiaFactor +
+								(Math.random() - 0.5) * 0.25,
+						);
+					}
+					frags.push(frag);
+				});
+				if (trackedBody[body.customStyle.team] === body) {
+					trackedBody[body.customStyle.team] = frags[maxIndex];
+					trackedBody[body.customStyle.team].customStyle.coreMass = coreMass;
+				}
+				Composite.remove(engine.world, body);
+				activeBodies = activeBodies.filter((b) => b !== body);
+				Composite.add(engine.world, frags);
+				activeBodies.push(...frags);
+			}
+
+			function spawnTops(rChar, bChar, rMass, bMass) {
+				activeBodies.forEach((b) => Composite.remove(engine.world, b));
+				activeBodies = [];
+				sparks = [];
+				let rDensity = 0.08 * (rMass / 1200);
+				let bDensity = 0.08 * (bMass / 1200);
+				let rRetain = Math.min(0.9998, 0.993 + (rMass / 3000) * 0.004);
+				let bRetain = Math.min(0.9998, 0.993 + (bMass / 3000) * 0.004);
+				const buildOptions = (density) => ({
+					restitution: 0.12,
+					friction: 0.04,
+					frictionAir: 0.001,
+					density: density,
+					render: { visible: false },
+				});
+				let rFinalMass = calculateFinalMass(rMass);
+				let bFinalMass = calculateFinalMass(bMass);
+				let redInitialSpin =
+					INITIAL_SPIN_BASE + Math.random() * INITIAL_SPIN_RANDOM;
+				let blueInitialSpin =
+					INITIAL_SPIN_BASE + Math.random() * INITIAL_SPIN_RANDOM;
+				let redFinalSpin =
+					roundPreview && roundPreview.red && currentRound === 0
+						? roundPreview.red.finalSpin
+						: calculateFinalSpin(redInitialSpin, rFinalMass);
+				let blueFinalSpin =
+					roundPreview && roundPreview.blue && currentRound === 0
+						? roundPreview.blue.finalSpin
+						: calculateFinalSpin(blueInitialSpin, bFinalMass);
+				let redBody = Bodies.rectangle(
+					cx - 150,
+					cy,
+					BASE_SIZE,
+					BASE_SIZE,
+					buildOptions(rDensity),
+				);
+				redBody.isActiveTop = true;
+				redBody.isTopPart = true;
+				redBody.isFragment = false;
+				redBody.isLargest = true;
+				redBody.customStyle = {
+					char: rChar,
+					team: "red",
+					faceColor: "#a9352e",
+					depthColor: "#7a231e",
+					spinRetain: rRetain,
+					initialSpin: redFinalSpin,
+					coreMass: rDensity * BASE_SIZE * BASE_SIZE,
+				};
+				Body.setAngularVelocity(redBody, redFinalSpin);
+				Body.setVelocity(redBody, { x: 1.2, y: (Math.random() - 0.5) * 0.8 });
+				let blueBody = Bodies.rectangle(
+					cx + 150,
+					cy,
+					BASE_SIZE,
+					BASE_SIZE,
+					buildOptions(bDensity),
+				);
+				blueBody.isActiveTop = true;
+				blueBody.isTopPart = true;
+				blueBody.isFragment = false;
+				blueBody.isLargest = true;
+				blueBody.customStyle = {
+					char: bChar,
+					team: "blue",
+					faceColor: "#285777",
+					depthColor: "#17364c",
+					spinRetain: bRetain,
+					initialSpin: blueFinalSpin,
+					coreMass: bDensity * BASE_SIZE * BASE_SIZE,
+				};
+				Body.setAngularVelocity(blueBody, -blueFinalSpin);
+				Body.setVelocity(blueBody, { x: -1.2, y: (Math.random() - 0.5) * 0.8 });
+				trackedBody.red = redBody;
+				trackedBody.blue = blueBody;
+				activeBodies.push(redBody, blueBody);
+				Composite.add(engine.world, activeBodies);
+			}
+		</script>
+	</body>
 </html>

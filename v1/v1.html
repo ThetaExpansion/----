@@ -823,6 +823,7 @@
 				width: clamp(36px, 8vw, 44px);
 				height: clamp(36px, 8vw, 44px);
 				border-radius: 50%;
+				 overflow: hidden;
 				background: linear-gradient(
 					135deg,
 					var(--red-team) 0%,
@@ -834,6 +835,12 @@
 				flex-shrink: 0;
 				box-shadow: 0 2px 8px rgba(40, 30, 20, 0.12);
 			}
+			.avatar-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* 等比例铺满，自动裁切多余画面，不变形拉伸 */
+    display: block;
+}
 			.author-avatar-inner {
 				color: #fff;
 				font-size: clamp(14px, 3.5vw, 18px);
@@ -1113,11 +1120,11 @@
 				<!-- 作者 -->
 				<div class="author-card">
 					<div class="author-avatar">
-						<span class="author-avatar-inner">K</span>
+    <img src="tmp5887.png" alt="团队头像" class="avatar-img">
 					</div>
 					<div class="author-info">
-						<div class="author-name">有个家伙跑路了不然这能放俩作者你说这扯不扯</div>
-						<div class="author-title">初学中，欢迎提供各种抽象创意🐹</div>
+						<div class="author-name">有几个家伙跑路了不然这作者能多放几个你说这扯不扯</div>
+						<div class="author-title">团队正在初学中，欢迎提供各种抽象创意以及加入我们🐹</div>
 					</div>
 				</div>
 			</div>
@@ -1432,7 +1439,7 @@
 				const minValue = 3000;
 				const maxValue = 5800;
 				const minPenalty = 0;
-				const maxPenalty = 2300;
+				const maxPenalty = 2200;
 				if (value <= minValue) return minPenalty;
 				if (value >= maxValue) return maxPenalty;
 				return (
@@ -1933,6 +1940,10 @@
 						let A = pair.bodyA,
 							B = pair.bodyB;
 						if (A.isTopPart && B.isTopPart) {
+							            // 新增：撞击后补偿角速度，抵消摩擦损耗
+           						 const compensateRatio = 1.08; // 每次碰撞补8%转速，抵消摩擦损失
+          		  Body.setAngularVelocity(A, A.angularVelocity * compensateRatio);
+        	    Body.setAngularVelocity(B, B.angularVelocity * compensateRatio);
 							const collisionPoint = pair.collision.supports[0] || A.position;
 							for (let i = 0; i < 10; i++) {
 								sparks.push({
@@ -2011,7 +2022,7 @@
 						let newAngVel =
 							body.angularVelocity *
 							body.customStyle.spinRetain *
-							getExtraDecayFactor(body.angularVelocity) *
+							// getExtraDecayFactor(body.angularVelocity) *//todo：去衰减
 							massFactor;
 						if (Math.abs(newAngVel) < FINAL_ZERO_THRESHOLD) {
 							newAngVel = 0;
@@ -2028,13 +2039,17 @@
 							spinRatio,
 							SPIN_LINEAR_COUPLING_POWER,
 						);
-						let spinLinearFactorPerFrame = Math.pow(
-							spinLinearFactorPerSecond,
-							1 / 60,
-						);
+						// let spinLinearFactorPerFrame = Math.pow(
+						// 	spinLinearFactorPerSecond,
+						// 	1 / 60,
+						// );
+						// Body.setVelocity(body, {
+						// 	x: body.velocity.x * LINEAR_DRAG * spinLinearFactorPerFrame,
+						// 	y: body.velocity.y * LINEAR_DRAG * spinLinearFactorPerFrame,
+						// });
 						Body.setVelocity(body, {
-							x: body.velocity.x * LINEAR_DRAG * spinLinearFactorPerFrame,
-							y: body.velocity.y * LINEAR_DRAG * spinLinearFactorPerFrame,
+  						  	x: body.velocity.x * LINEAR_DRAG,
+   							y: body.velocity.y * LINEAR_DRAG,
 						});
 					});
 					// 胜负判定：核心碎块是否完全停转
@@ -2136,7 +2151,7 @@
 					let worldX = body.position.x + f.ox * cos - f.oy * sin;
 					let worldY = body.position.y + f.ox * sin + f.oy * cos;
 					let frag = Bodies.rectangle(worldX, worldY, f.w, f.h, {
-						restitution: 0.13,
+						restitution: 0.4, //todo：改进之二
 						friction: 0.04,
 						frictionAir: 0.006,
 						density: body.density,
@@ -2202,7 +2217,7 @@
 				const redStabilityScore = calculateStability(rMass);
 				const blueStabilityScore = calculateStability(bMass);
 				const buildOptions = (density, stabilityScore) => ({
-					restitution: 0.25,
+					restitution: 0.1,  //todo：改进之一
 					friction: 0.15 + (stabilityScore / 5) * 0.35,
 					frictionAir: 0.001,
 					density: density,
