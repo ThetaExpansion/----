@@ -1076,6 +1076,70 @@
 			#btn-preview-close {
 				display: none !important;
 			}
+
+			/* ==================== 颜文字霓虹灯管系统（纯新增） ==================== */
+			#kaomoji-box {
+				display: flex;
+				justify-content: center;
+				align-items: center;
+				margin: 6px 0 -6px;
+				height: clamp(56px, 10vw, 80px);
+				position: relative;
+				z-index: 20;
+				pointer-events: none;
+			}
+			.km-breathe {
+				animation: kmBreathe 2.8s ease-in-out infinite;
+			}
+			.km-float {
+				animation: kmFloat 3.2s ease-in-out infinite;
+			}
+			.km-sway {
+				animation: kmSway 4.5s ease-in-out infinite;
+			}
+			.km-face {
+				font-size: clamp(1.8rem, 5.5vw, 2.8rem);
+				line-height: 1;
+				color: #fff;
+				transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s;
+				text-shadow:
+					0 0 4px #fff,
+					0 0 8px #fff,
+					0 0 16px var(--km-glow, #ffd700),
+					0 0 32px var(--km-glow, #ffd700),
+					0 0 64px var(--km-glow, #ffd700),
+					0 0 96px var(--km-glow, #ffd700);
+				filter: drop-shadow(0 0 10px rgba(255,255,255,0.5)) brightness(1.05);
+				animation: kmFlicker 6s infinite;
+				transform: scale(var(--km-scale, 1));
+				user-select: none;
+				display: inline-block;
+				letter-spacing: 1px;
+			}
+			@keyframes kmFloat {
+				0%, 100% { transform: translateY(0); }
+				50% { transform: translateY(-14px); }
+			}
+			@keyframes kmSway {
+				0%, 100% { transform: rotate(-4deg); }
+				50% { transform: rotate(4deg); }
+			}
+			@keyframes kmBreathe {
+				0%, 100% { opacity: 0.88; }
+				50% { opacity: 1; }
+			}
+			@keyframes kmFlicker {
+				0%, 100% { opacity: 1; filter: brightness(1); }
+				41% { opacity: 1; filter: brightness(1); }
+				42% { opacity: 0.82; filter: brightness(1.25); }
+				43% { opacity: 1; filter: brightness(1); }
+				46% { opacity: 0.9; filter: brightness(1.15); }
+				47% { opacity: 1; filter: brightness(1); }
+				65% { opacity: 1; filter: brightness(1); }
+				66% { opacity: 0.85; filter: brightness(1.3); }
+				67% { opacity: 1; filter: brightness(1); }
+			}
+			/* ================================================================== */
 		</style>
 	</head>
 	<body>
@@ -1150,6 +1214,19 @@
 						</div>
 						<div id="roster-blue" class="team-roster"></div>
 					</div>
+
+					<!-- ==================== 颜文字（纯新增） ==================== -->
+					<div id="kaomoji-box">
+						<div class="km-breathe">
+							<div class="km-float">
+								<div class="km-sway">
+									<div id="kaomoji-face" class="km-face">₍^ >ヮ<^₎</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<!-- ====================================================== -->
+
 					<div id="view-wrapper">
 						<div id="game-container"></div>
 					</div>
@@ -1214,6 +1291,38 @@
 			let sparks = [];
 			let roundStartTime = 0;
 			let roundPreview = null;
+
+			// ==================== 颜文字状态机（纯新增） ====================
+			const KM_CFG = {
+				relaxed: { text: '₍^ >ヮ<^₎', glow: '#ffd700', scale: 1 },
+				tense:   { text: '₍^oヮo^₎',  glow: '#ff2a2a', scale: 1.12 },
+				worried: { text: '₍^⊙︿⊙^₎', glow: '#ff6b9d', scale: 0.92 },
+				happy:   { text: '₍^⸝⸝>ヮ<⸝⸝^₎', glow: '#44ff88', scale: 1.18 }
+			};
+			let kmState = 'relaxed';
+			let kmLockedUntil = 0;
+			let kmRestoreTimer = null;
+
+			function setKm(state, lockMs) {
+				const now = Date.now();
+				if (state !== 'happy' && now < kmLockedUntil) return;
+				if (kmState === state) return;
+				kmState = state;
+				kmLockedUntil = now + (lockMs || 1000);
+				const el = document.getElementById('kaomoji-face');
+				if (!el) return;
+				const c = KM_CFG[state];
+				el.textContent = c.text;
+				el.style.setProperty('--km-glow', c.glow);
+				el.style.setProperty('--km-scale', c.scale);
+				if (kmRestoreTimer) clearTimeout(kmRestoreTimer);
+				if (state !== 'relaxed') {
+					kmRestoreTimer = setTimeout(() => {
+						if (gameState === 'PLAYING') setKm('relaxed', 500);
+					}, lockMs || 1000);
+				}
+			}
+			// ===========================================================
 
 			// 追踪核心碎块（决定胜负的对象）
 			let trackedBody = { red: null, blue: null };
@@ -1655,6 +1764,7 @@
 				btnNextRound.style.display = "block";
 				initPhysics();
 				gameState = "ROUND_OVER";
+				setKm('relaxed', 0); // 颜文字：进入战场时恢复轻松
 				requestAnimationFrame(fitBattleScale);
 			});
 
@@ -1790,6 +1900,7 @@
 					btnNextRound.style.display = "none";
 					if (score.red !== score.blue) {
 						celebrateMatchWinner();
+						setKm('happy', 3000); // 颜文字：比赛最终胜利
 						setTimeout(() => {
 							resetToInputPage();
 						}, 2200);
@@ -1805,6 +1916,7 @@
 			}
 
 			function doStartRound() {
+				setKm('relaxed', 0); // 颜文字：回合开始时轻松期待
 				gameState = "PLAYING";
 				btnNextRound.disabled = true;
 				let rChar = redName[currentRound],
@@ -1940,7 +2052,8 @@
 						let A = pair.bodyA,
 							B = pair.bodyB;
 						if (A.isTopPart && B.isTopPart) {
-							            // 新增：撞击后补偿角速度，抵消摩擦损耗
+							setKm('tense', 1200); // 颜文字：猛烈相撞变紧张（1.2秒冷却）
+							// 新增：撞击后补偿角速度，抵消摩擦损耗
            						 const compensateRatio = 1.08; // 每次碰撞补8%转速，抵消摩擦损失
           		  Body.setAngularVelocity(A, A.angularVelocity * compensateRatio);
         	    Body.setAngularVelocity(B, B.angularVelocity * compensateRatio);
@@ -1997,6 +2110,17 @@
 
 				Events.on(engine, "beforeUpdate", function () {
 					if (gameState !== "PLAYING") return;
+					
+					// === 颜文字：检测转速变慢变担忧 ===
+					let maxSpin = 0;
+					for (let b of activeBodies) {
+						if (b.isActiveTop) maxSpin = Math.max(maxSpin, Math.abs(b.angularVelocity));
+					}
+					if (maxSpin < 0.9 && maxSpin > 0.03 && kmState !== 'worried' && kmState !== 'happy' && Date.now() > kmLockedUntil) {
+						setKm('worried', 1200);
+					}
+					// =================================
+					
 					activeBodies.forEach((body) => {
 						if (!body.isActiveTop) return;
 						// 盆地引力
@@ -2076,6 +2200,7 @@
 							} else {
 								statusEl.textContent = `本回合：双方核心碎块同时停止，平局`;
 							}
+							setKm('happy', 3000); // 颜文字：分出胜负，开心放烟花
 							updateScoreboard();
 						}
 					}
