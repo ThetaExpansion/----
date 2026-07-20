@@ -62,7 +62,7 @@
 				min-height: 100vh;
 				overflow-y: auto;
 				overflow-x: hidden;
-				padding: 14px 0 28px;
+				padding: 4px 0 28px;
 				-webkit-overflow-scrolling: touch;
 			}
 			#battle-scale-outer {
@@ -104,7 +104,7 @@
 				border-radius: 10px;
 				box-shadow: 0 6px 18px rgba(40, 30, 20, 0.05);
 				margin-bottom: 40px;
-                margin-top: 20px;
+				margin-top: 10px;
 				z-index: 10;
 				gap: 12px;
 			}
@@ -163,14 +163,14 @@
 				border-radius: 999px;
 				border: 1px solid var(--border-color);
 			}
-#view-wrapper {
-    position: relative;
-    z-index: 1;          /* 新增：确立独立层叠上下文 */
-    perspective: 1200px;
-    width: 100%;
-    display: flex;
-    justify-content: center;
-}
+			#view-wrapper {
+				position: relative;
+				z-index: 1; /* 新增：确立独立层叠上下文 */
+				perspective: 1200px;
+				width: 100%;
+				display: flex;
+				justify-content: center;
+			}
 			#game-container {
 				position: relative;
 				width: min(600px, 92vw);
@@ -285,7 +285,6 @@
 				font-size: clamp(4rem, 6vw, 8rem);
 				font-weight: bold;
 				color: inherit;
-                
 			}
 			.stat-list {
 				width: 100%;
@@ -333,7 +332,7 @@
 					padding: 18px 16px;
 					flex-direction: column;
 					gap: 10px;
-                    margin-top: 20px;
+					margin-top: 20px;
 				}
 				.score-board {
 					width: 100%;
@@ -429,7 +428,7 @@
 				color: #666;
 				font-size: 0.9rem;
 				margin-top: 15px;
-                margin-bottom: 50px;
+				margin-bottom: 50px;
 				text-align: left;
 				background: #f2efe6;
 				padding: 12px 14px;
@@ -634,19 +633,19 @@
 				transition: var(--transition-smooth);
 				font-weight: 500;
 			}
-            .feature-desc {
-                color: #666;
-                font-size: 0.9rem;
-                /* 上边距：桌面24px，移动端14px，响应式自动适配 */
-                margin-inline: clamp(20px, 3vw, 90px);
-                text-align: left;
-                background: linear-gradient(135deg, #f5f2ea 0%, #ede9df 100%);
-                border: 1px solid var(--border-color);
-                padding: 12px 14px;
-                border-radius: 10px;
-                line-height: 1.7;
-                transition: var(--transition-smooth);
-            }
+			.feature-desc {
+				color: #666;
+				font-size: 0.9rem;
+				/* 上边距：桌面24px，移动端14px，响应式自动适配 */
+				margin-inline: clamp(20px, 3vw, 90px);
+				text-align: left;
+				background: linear-gradient(135deg, #f5f2ea 0%, #ede9df 100%);
+				border: 1px solid var(--border-color);
+				padding: 12px 14px;
+				border-radius: 10px;
+				line-height: 1.7;
+				transition: var(--transition-smooth);
+			}
 			.feature-desc:hover {
 				box-shadow: var(--shadow-ambient);
 			}
@@ -796,7 +795,7 @@
 			/* ── 作者小卡 ── */
 			.author-card {
 				margin-top: clamp(16px, 3vw, 24px);
-                margin-bottom: clamp(30px, 3vw, 24px);
+				margin-bottom: clamp(30px, 3vw, 24px);
 				padding: clamp(10px, 2.5vw, 14px) clamp(14px, 3vw, 20px);
 				background: linear-gradient(135deg, #f9f7f2 0%, #f3f0e8 100%);
 				border: 1px solid var(--border-color);
@@ -818,7 +817,7 @@
 				width: clamp(36px, 8vw, 44px);
 				height: clamp(36px, 8vw, 44px);
 				border-radius: 50%;
-				 overflow: hidden;
+				overflow: hidden;
 				background: linear-gradient(
 					135deg,
 					var(--red-team) 0%,
@@ -831,11 +830,11 @@
 				box-shadow: 0 2px 8px rgba(40, 30, 20, 0.12);
 			}
 			.avatar-img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover; /* 等比例铺满，自动裁切多余画面，不变形拉伸 */
-    display: block;
-}
+				width: 100%;
+				height: 100%;
+				object-fit: cover; /* 等比例铺满，自动裁切多余画面，不变形拉伸 */
+				display: block;
+			}
 			.author-avatar-inner {
 				color: #fff;
 				font-size: clamp(14px, 3.5vw, 18px);
@@ -966,7 +965,7 @@
 				h1 {
 					font-size: clamp(1.3rem, 7vw, 1.6rem);
 					letter-spacing: 1px;
-                    margin-top: 16px;
+					margin-top: 16px;
 				}
 				.input-card {
 					padding: 20px 14px;
@@ -1068,97 +1067,144 @@
 			#btn-preview-close {
 				display: none !important;
 			}
-/* ==================== 颜文字高饱和纯色系统（纯新增） ==================== */
-#kaomoji-box {
-	display: flex;
-	justify-content: center;
-	align-items: center;
-	margin: 6px 0 -6px;
-	height: clamp(56px, 10vw, 80px);
-	position: relative;
-	z-index: 20;
-	pointer-events: none;
-}
-.km-breathe {
-	animation: kmBreathe 2.8s ease-in-out infinite;
-}
-.km-float {
-	animation: kmFloat 3.2s ease-in-out infinite;
-}
-.km-sway {
-	animation: kmSway 4.5s ease-in-out infinite;
-}
-.km-face {
-	font-size: clamp(1rem, 5.5vw, 1.8rem);
-	line-height: 1;
-	/* 默认轻松色：高饱和亮橙，在白色背景上极其扎眼 */
-	color: #ff6d00;
-	transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s, color 0.4s ease;
-	animation: kmFlicker 6s infinite;
-	transform: scale(var(--km-scale, 1));
-	user-select: none;
-	display: inline-block;
-	letter-spacing: 1px;
-	font-weight: 800;
-}
-@keyframes kmFloat {
-	0%, 100% { transform: translateY(0); }
-	50% { transform: translateY(-14px); }
-}
-@keyframes kmSway {
-	0%, 100% { transform: rotate(-4deg); }
-	50% { transform: rotate(4deg); }
-}
-@keyframes kmBreathe {
-	0%, 100% { opacity: 0.88; }
-	50% { opacity: 1; }
-}
-@keyframes kmFlicker {
-	0%, 100% { opacity: 1; }
-	41% { opacity: 1; }
-	42% { opacity: 0.82; }
-	43% { opacity: 1; }
-	46% { opacity: 0.9; }
-	47% { opacity: 1; }
-	65% { opacity: 1; }
-	66% { opacity: 0.85; }
-	67% { opacity: 1; }
+			/* ==================== 颜文字高饱和纯色系统（纯新增） ==================== */
+			#kaomoji-box {
+				display: flex;
+				justify-content: center;
+				align-items: center;
+				margin: 6px 0 -6px;
+				height: clamp(56px, 10vw, 80px);
+				position: relative;
+				z-index: 20;
+				pointer-events: none;
+			}
+			.km-breathe {
+				animation: kmBreathe 2.8s ease-in-out infinite;
+			}
+			.km-float {
+				animation: kmFloat 3.2s ease-in-out infinite;
+			}
+			.km-sway {
+				animation: kmSway 4.5s ease-in-out infinite;
+			}
+			.km-face {
+				font-size: clamp(1rem, 5.5vw, 1.8rem);
+				line-height: 1;
+				/* 默认轻松色：高饱和亮橙，在白色背景上极其扎眼 */
+				color: #ff6d00;
+				transition:
+					transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1),
+					opacity 0.3s,
+					color 0.4s ease;
+				animation: kmFlicker 6s infinite;
+				transform: scale(var(--km-scale, 1));
+				user-select: none;
+				display: inline-block;
+				letter-spacing: 1px;
+				font-weight: 800;
+			}
+			@keyframes kmFloat {
+				0%,
+				100% {
+					transform: translateY(0);
+				}
+				50% {
+					transform: translateY(-14px);
+				}
+			}
+			@keyframes kmSway {
+				0%,
+				100% {
+					transform: rotate(-4deg);
+				}
+				50% {
+					transform: rotate(4deg);
+				}
+			}
+			@keyframes kmBreathe {
+				0%,
+				100% {
+					opacity: 0.88;
+				}
+				50% {
+					opacity: 1;
+				}
+			}
+			@keyframes kmFlicker {
+				0%,
+				100% {
+					opacity: 1;
+				}
+				41% {
+					opacity: 1;
+				}
+				42% {
+					opacity: 0.82;
+				}
+				43% {
+					opacity: 1;
+				}
+				46% {
+					opacity: 0.9;
+				}
+				47% {
+					opacity: 1;
+				}
+				65% {
+					opacity: 1;
+				}
+				66% {
+					opacity: 0.85;
+				}
+				67% {
+					opacity: 1;
+				}
+			}
 
-}
+			/* ==================== 倒计时系统（纯新增） ==================== */
+			#countdown-overlay {
+				position: absolute;
+				inset: 0;
+				display: none;
+				align-items: center;
+				justify-content: center;
+				transform: translateY(-20px);
+				z-index: 9999; /* 修改：100 → 9999 */
+				pointer-events: none;
+				font-size: clamp(5rem, 14vw, 8rem);
+				font-weight: 900;
+				color: #f3f1ec;
+				text-shadow:
+					0 2px 0 rgba(167, 163, 147, 0.95),
+					0 0 20px rgba(188, 185, 173, 0.8);
+				font-family: "Charter", Georgia, serif;
+				letter-spacing: 4px;
+			}
+			.countdown-pop {
+				animation: cdPop 0.9s cubic-bezier(0.34, 1.56, 0.64, 1);
+				/* 不加 forwards，动画结束后回到元素默认样式（可见） */
+			}
+			@keyframes cdPop {
+				0% {
+					transform: scale(0.25);
+					opacity: 0;
+				}
+				25% {
+					transform: scale(1.2);
+					opacity: 1;
+				}
+				50% {
+					transform: scale(1);
+					opacity: 1;
+				}
+				100% {
+					transform: scale(1);
+					opacity: 1;
+				} /* 始终保持可见 */
+			}
+			/* ============================================================ */
 
-/* ==================== 倒计时系统（纯新增） ==================== */
-#countdown-overlay {
-    position: absolute;
-    inset: 0;
-    display: none;
-    align-items: center;
-    justify-content: center;
-	transform: translateY(-20px);
-    z-index: 9999;       /* 修改：100 → 9999 */
-    pointer-events: none;
-    font-size: clamp(5rem, 14vw, 8rem);
-    font-weight: 900;
-    color: #8b8894;
-    text-shadow:
-        0 2px 0 rgba(255,255,255,0.95),
-        0 0 20px rgba(255,255,255,0.8);
-    font-family: 'Charter', Georgia, serif;
-    letter-spacing: 4px;
-}
-.countdown-pop {
-    animation: cdPop 0.9s cubic-bezier(0.34, 1.56, 0.64, 1);
-    /* 不加 forwards，动画结束后回到元素默认样式（可见） */
-}
-@keyframes cdPop {
-    0%   { transform: scale(0.25); opacity: 0; }
-    25%  { transform: scale(1.2);  opacity: 1; }
-    50%  { transform: scale(1);    opacity: 1; }
-    100% { transform: scale(1);    opacity: 1; }  /* 始终保持可见 */
-}
-/* ============================================================ */
-
-
-/* ====================================================================== */
+			/* ====================================================================== */
 		</style>
 	</head>
 	<body>
@@ -1168,7 +1214,7 @@
 			<div class="input-card">
 				<h1>誰的八字更硬測試器</h1>
 				<p style="color: #666; margin-bottom: 20px">
-					请输入纯汉字，汉字会依次变成陀螺对战，双方字数必须相等 ₍^ >ヮ<^₎ .ᐟ.ᐟ
+					请输入纯汉字，汉字会依次变成陀螺对战，双方字数必须相等
 				</p>
 				<div class="input-group">
 					<input
@@ -1190,24 +1236,30 @@
 				<button id="btn-goto-battle">生成战场</button>
 				<div id="input-error" class="error-msg"></div>
 				<div class="feature-desc">
-					<strong>⚔️ 游戏规则：小时候玩过的斗陀螺
-				<br/>1. 
+					<strong>⚔️ 游戏规则：小时候玩过的斗陀螺</strong>
+					<br />1.
 					<strong>碎裂机制</strong
 					>：猛烈撞击可能导致字体裂成大小不均的碎块——大概率甩出几个小碎渣，保留一块较大的"核心碎块"。<br />
 					2.
 					<strong>胜负判定</strong
 					>：只看双方的「核心碎块」谁先完全停转（精确归零），先停者判负，与其余小碎块是否还在转无关。<br />
-                    3. <strong>战斗策略</strong>：不同字形的速度、转动惯量、质量、稳固性等等都不太一样，选择合适的字形可以影响战局。<br />
+					3.
+					<strong>战斗策略</strong
+					>：不同字形的速度、转动惯量、质量、稳固性等等都不太一样，选择合适的字形可以影响战局。<br />
 				</div>
 
 				<!-- 作者 -->
 				<div class="author-card">
 					<div class="author-avatar">
-    <img src="tmp5887.png" alt="团队头像" class="avatar-img">
+						<img src="tmp5887.png" alt="团队头像" class="avatar-img" />
 					</div>
 					<div class="author-info">
-						<div class="author-name">有几个家伙跑路了不然这作者能多放几个你说这扯不扯</div>
-						<div class="author-title">团队正在初学中，欢迎提供各种抽象创意以及加入我们🐹</div>
+						<div class="author-name">
+							有几个家伙跑路了不然这作者能多放几个你说这扯不扯
+						</div>
+						<div class="author-title">
+							团队正在初学中，欢迎提供各种抽象创意以及加入我们&nbsp🐹
+						</div>
 					</div>
 				</div>
 			</div>
@@ -1312,38 +1364,38 @@
 			let roundStartTime = 0;
 			let roundPreview = null;
 
-// ==================== 颜文字状态机（纯新增） ====================
-const KM_CFG = {
-	relaxed: { text: '₍^ >ヮ<^₎',   color: '#c0c0c0', scale: 1 },   // 亮橙
-	tense:   { text: '₍^oヮo^₎',    color: '#5c194', scale: 1}, // 正红
-	worried: { text: '( ⁰▿⁰)',   color: '#c8d65', scale: 1 }, // 暗红
-	happy:   { text: 'ꉂꉂ(ˊᗜˋ)', color: '#37ad2', scale: 1 } // 翠绿
-};
-let kmState = 'relaxed';
-let kmLockedUntil = 0;
-let kmRestoreTimer = null;
-let kmWorriedLocked = false; // 一旦进入担忧就永久锁定，直到 happy
+			// ==================== 颜文字状态机（纯新增） ====================
+			const KM_CFG = {
+				relaxed: { text: "₍^ >ヮ<^₎", color: "#c0c0c0", scale: 1 }, // 亮橙
+				tense: { text: "₍^oヮo^₎", color: "#5c194", scale: 1 }, // 正红
+				worried: { text: "( ⁰▿⁰)", color: "#c8d65", scale: 1 }, // 暗红
+				happy: { text: "ꉂꉂ(ˊᗜˋ)", color: "#37ad2", scale: 1 }, // 翠绿
+			};
+			let kmState = "relaxed";
+			let kmLockedUntil = 0;
+			let kmRestoreTimer = null;
+			let kmWorriedLocked = false; // 一旦进入担忧就永久锁定，直到 happy
 
-function setKm(state, lockMs) {
-	const now = Date.now();
-	// happy 可以覆盖一切；worried 锁定后只接受 happy
-	if (state !== 'happy') {
-		if (kmWorriedLocked && state !== 'worried') return;
-		if (now < kmLockedUntil) return;
-	}
-	kmState = state;
-	if (state === 'worried') kmWorriedLocked = true; // 进入担忧即锁定
-	kmLockedUntil = now + (lockMs || 1000);
-	const el = document.getElementById('kaomoji-face');
-	if (!el) return;
-	const c = KM_CFG[state];
-	el.textContent = c.text;
-	el.style.color = c.color;
-	el.style.setProperty('--km-scale', c.scale);
-	if (kmRestoreTimer) clearTimeout(kmRestoreTimer);
-	// 不再自动恢复 relaxed，去掉 setTimeout 恢复逻辑
-}
-// ===========================================================
+			function setKm(state, lockMs) {
+				const now = Date.now();
+				// happy 可以覆盖一切；worried 锁定后只接受 happy
+				if (state !== "happy") {
+					if (kmWorriedLocked && state !== "worried") return;
+					if (now < kmLockedUntil) return;
+				}
+				kmState = state;
+				if (state === "worried") kmWorriedLocked = true; // 进入担忧即锁定
+				kmLockedUntil = now + (lockMs || 1000);
+				const el = document.getElementById("kaomoji-face");
+				if (!el) return;
+				const c = KM_CFG[state];
+				el.textContent = c.text;
+				el.style.color = c.color;
+				el.style.setProperty("--km-scale", c.scale);
+				if (kmRestoreTimer) clearTimeout(kmRestoreTimer);
+				// 不再自动恢复 relaxed，去掉 setTimeout 恢复逻辑
+			}
+			// ===========================================================
 			// 追踪核心碎块（决定胜负的对象）
 			let trackedBody = { red: null, blue: null };
 
@@ -1785,7 +1837,7 @@ function setKm(state, lockMs) {
 				initPhysics();
 				gameState = "ROUND_OVER";
 				kmWorriedLocked = false; // 新增：确保第一回合能切回轻松
-				setKm('relaxed', 0); // 颜文字：进入战场时恢复轻松
+				setKm("relaxed", 0); // 颜文字：进入战场时恢复轻松
 				kmWorriedLocked = false;
 				requestAnimationFrame(fitBattleScale);
 			});
@@ -1922,17 +1974,17 @@ function setKm(state, lockMs) {
 					btnNextRound.style.display = "none";
 					if (score.red !== score.blue) {
 						celebrateMatchWinner();
-						setKm('happy', 3000); // 颜文字：比赛最终胜利
+						setKm("happy", 3000); // 颜文字：比赛最终胜利
 						setTimeout(() => {
 							resetToInputPage();
 						}, 2200);
 					}
 					return;
 				}
-					/* 新增：一点击"下一回合"立刻切回轻松，不用等战斗开始 */
-	kmWorriedLocked = false;
-	setKm('relaxed', 0);
-	/* ====================================================== */
+				/* 新增：一点击"下一回合"立刻切回轻松，不用等战斗开始 */
+				kmWorriedLocked = false;
+				setKm("relaxed", 0);
+				/* ====================================================== */
 				// 每回合开始前弹出预览
 				preparePreview();
 				previewModal.classList.remove("preview-hidden");
@@ -1941,86 +1993,85 @@ function setKm(state, lockMs) {
 				if (previewWindow) previewWindow.scrollTop = 0;
 			}
 
+			function startCountdown(onComplete) {
+				const overlay = document.getElementById("countdown-overlay");
+				if (!overlay) {
+					onComplete();
+					return;
+				}
+				let count = 3;
+				overlay.style.display = "flex";
+				overlay.style.opacity = "1"; // 新增：先强制可见
+				overlay.textContent = count;
+				overlay.classList.remove("countdown-pop");
 
-function startCountdown(onComplete) {
-    const overlay = document.getElementById('countdown-overlay');
-    if (!overlay) {
-        onComplete();
-        return;
-    }
-    let count = 3;
-    overlay.style.display = 'flex';
-    overlay.style.opacity = '1';        // 新增：先强制可见
-    overlay.textContent = count;
-    overlay.classList.remove('countdown-pop');
-    
-    requestAnimationFrame(() => {
-        overlay.classList.add('countdown-pop');
-    });
+				requestAnimationFrame(() => {
+					overlay.classList.add("countdown-pop");
+				});
 
-    const tick = () => {
-        count--;
-        if (count <= 0) {
-            overlay.style.display = 'none';
-            overlay.classList.remove('countdown-pop');
-            onComplete();
-            return;
-        }
-        overlay.textContent = count;
-        overlay.style.opacity = '1';    // 新增：切数字时先重置可见
-        overlay.classList.remove('countdown-pop');
-        
-        // 强制重绘后再加动画类，避免浏览器合并导致动画不重启
-        void overlay.offsetWidth;
-        
-        requestAnimationFrame(() => {
-            overlay.classList.add('countdown-pop');
-        });
-        setTimeout(tick, 1000);
-    };
-    setTimeout(tick, 1000);
-}
+				const tick = () => {
+					count--;
+					if (count <= 0) {
+						overlay.style.display = "none";
+						overlay.classList.remove("countdown-pop");
+						onComplete();
+						return;
+					}
+					overlay.textContent = count;
+					overlay.style.opacity = "1"; // 新增：切数字时先重置可见
+					overlay.classList.remove("countdown-pop");
 
-function doStartRound() {
-    kmWorriedLocked = false;
-    setKm('relaxed', 0);
+					// 强制重绘后再加动画类，避免浏览器合并导致动画不重启
+					void overlay.offsetWidth;
 
-    gameState = "COUNTDOWN"; // 先进入倒计时，不转
-    btnNextRound.disabled = true;
-    let rChar = redName[currentRound],
-        bChar = blueName[currentRound];
-    let rMass = getCharComplexity(rChar),
-        bMass = getCharComplexity(bChar);
-    let rFinalMass = calculateFinalMass(rMass);
-    let bFinalMass = calculateFinalMass(bMass);
+					requestAnimationFrame(() => {
+						overlay.classList.add("countdown-pop");
+					});
+					setTimeout(tick, 1000);
+				};
+				setTimeout(tick, 1000);
+			}
 
-    statusEl.innerHTML = `第 ${currentRound + 1} 回合... <span style="font-size:0.8rem"> (红质量:${rFinalMass} 蓝质量:${bFinalMass})</span>`;
-    updateRosterHighlight();
-    spawnTops(rChar, bChar, rMass, bMass);
+			function doStartRound() {
+				kmWorriedLocked = false;
+				setKm("relaxed", 0);
 
-    // 冻结：保存速度并清零，倒计时结束再恢复
-    activeBodies.forEach(b => {
-        b._savedAngularVelocity = b.angularVelocity;
-        b._savedVelocity = { x: b.velocity.x, y: b.velocity.y };
-        Body.setAngularVelocity(b, 0);
-        Body.setVelocity(b, { x: 0, y: 0 });
-    });
+				gameState = "COUNTDOWN"; // 先进入倒计时，不转
+				btnNextRound.disabled = true;
+				let rChar = redName[currentRound],
+					bChar = blueName[currentRound];
+				let rMass = getCharComplexity(rChar),
+					bMass = getCharComplexity(bChar);
+				let rFinalMass = calculateFinalMass(rMass);
+				let bFinalMass = calculateFinalMass(bMass);
 
-    currentRound++;
+				statusEl.innerHTML = `第 ${currentRound + 1} 回合... <span style="font-size:0.8rem"> (红质量:${rFinalMass} 蓝质量:${bFinalMass})</span>`;
+				updateRosterHighlight();
+				spawnTops(rChar, bChar, rMass, bMass);
 
-    // 3 秒倒计时，叠在 view-wrapper 上面
-    startCountdown(() => {
-        // 倒计时结束，恢复运动，正式进入 PLAYING
-        activeBodies.forEach(b => {
-            Body.setAngularVelocity(b, b._savedAngularVelocity || 0);
-            Body.setVelocity(b, b._savedVelocity || { x: 0, y: 0 });
-            delete b._savedAngularVelocity;
-            delete b._savedVelocity;
-        });
-        gameState = "PLAYING";
-        roundStartTime = Date.now();
-    });
-}
+				// 冻结：保存速度并清零，倒计时结束再恢复
+				activeBodies.forEach((b) => {
+					b._savedAngularVelocity = b.angularVelocity;
+					b._savedVelocity = { x: b.velocity.x, y: b.velocity.y };
+					Body.setAngularVelocity(b, 0);
+					Body.setVelocity(b, { x: 0, y: 0 });
+				});
+
+				currentRound++;
+
+				// 3 秒倒计时，叠在 view-wrapper 上面
+				startCountdown(() => {
+					// 倒计时结束，恢复运动，正式进入 PLAYING
+					activeBodies.forEach((b) => {
+						Body.setAngularVelocity(b, b._savedAngularVelocity || 0);
+						Body.setVelocity(b, b._savedVelocity || { x: 0, y: 0 });
+						delete b._savedAngularVelocity;
+						delete b._savedVelocity;
+					});
+					gameState = "PLAYING";
+					roundStartTime = Date.now();
+				});
+			}
 
 			function initPhysics() {
 				engine = Engine.create({ gravity: { x: 0, y: 0 } });
@@ -2139,11 +2190,11 @@ function doStartRound() {
 						let A = pair.bodyA,
 							B = pair.bodyB;
 						if (A.isTopPart && B.isTopPart) {
-							setKm('tense', 1200); // 颜文字：猛烈相撞变紧张（1.2秒冷却）
+							setKm("tense", 1200); // 颜文字：猛烈相撞变紧张（1.2秒冷却）
 							// 新增：撞击后补偿角速度，抵消摩擦损耗
-           						 const compensateRatio = 1.08; // 每次碰撞补8%转速，抵消摩擦损失
-          		  Body.setAngularVelocity(A, A.angularVelocity * compensateRatio);
-        	    Body.setAngularVelocity(B, B.angularVelocity * compensateRatio);
+							const compensateRatio = 1.08; // 每次碰撞补8%转速，抵消摩擦损失
+							Body.setAngularVelocity(A, A.angularVelocity * compensateRatio);
+							Body.setAngularVelocity(B, B.angularVelocity * compensateRatio);
 							const collisionPoint = pair.collision.supports[0] || A.position;
 							for (let i = 0; i < 10; i++) {
 								sparks.push({
@@ -2168,7 +2219,7 @@ function doStartRound() {
 							let stabA = A.customStyle.stabilityScore || 3;
 							let stabB = B.customStyle.stabilityScore || 3;
 							// 稳固性影响碎裂阈值：1分=16, 3分=28, 5分=40
-							let thresholdA =  stabA * 2.5;
+							let thresholdA = stabA * 2.5;
 							let thresholdB = stabB * 2.5;
 							// 稳固性影响碎裂概率乘数：1分=1.0, 3分=0.65, 5分=0.3
 							let multA = 0.4 + (5 - stabA) * 0.2;
@@ -2197,17 +2248,24 @@ function doStartRound() {
 
 				Events.on(engine, "beforeUpdate", function () {
 					if (gameState !== "PLAYING") return;
-					
+
 					// === 颜文字：检测转速变慢变担忧 ===
 					let maxSpin = 0;
 					for (let b of activeBodies) {
-						if (b.isActiveTop) maxSpin = Math.max(maxSpin, Math.abs(b.angularVelocity));
+						if (b.isActiveTop)
+							maxSpin = Math.max(maxSpin, Math.abs(b.angularVelocity));
 					}
-					if (maxSpin < 0.2 && maxSpin > 0.03 && kmState !== 'worried' && kmState !== 'happy' && Date.now() > kmLockedUntil) {
-						setKm('worried', 1200);
+					if (
+						maxSpin < 0.2 &&
+						maxSpin > 0.03 &&
+						kmState !== "worried" &&
+						kmState !== "happy" &&
+						Date.now() > kmLockedUntil
+					) {
+						setKm("worried", 1200);
 					}
 					// =================================
-					
+
 					activeBodies.forEach((body) => {
 						if (!body.isActiveTop) return;
 						// 盆地引力
@@ -2259,8 +2317,8 @@ function doStartRound() {
 						// 	y: body.velocity.y * LINEAR_DRAG * spinLinearFactorPerFrame,
 						// });
 						Body.setVelocity(body, {
-  						  	x: body.velocity.x * LINEAR_DRAG,
-   							y: body.velocity.y * LINEAR_DRAG,
+							x: body.velocity.x * LINEAR_DRAG,
+							y: body.velocity.y * LINEAR_DRAG,
 						});
 					});
 					// 胜负判定：核心碎块是否完全停转
@@ -2287,7 +2345,7 @@ function doStartRound() {
 							} else {
 								statusEl.textContent = `本回合：双方核心碎块同时停止，平局`;
 							}
-							setKm('happy', 3000); // 颜文字：分出胜负，开心放烟花
+							setKm("happy", 3000); // 颜文字：分出胜负，开心放烟花
 							updateScoreboard();
 						}
 					}
@@ -2424,12 +2482,12 @@ function doStartRound() {
 				sparks = [];
 				let rDensity = 0.08 * (rMass / 1200);
 				let bDensity = 0.08 * (bMass / 1200);
-				let rRetain = Math.min(0.9998, 0.999- (rMass / 3000) * 0.004);
-				let bRetain = Math.min(0.9998, 0.999- (bMass / 3000) * 0.004);
+				let rRetain = Math.min(0.9998, 0.999 - (rMass / 3000) * 0.004);
+				let bRetain = Math.min(0.9998, 0.999 - (bMass / 3000) * 0.004);
 				const redStabilityScore = calculateStability(rMass);
 				const blueStabilityScore = calculateStability(bMass);
 				const buildOptions = (density, stabilityScore) => ({
-					restitution: 0.1,  //todo：改进之一
+					restitution: 0.1, //todo：改进之一
 					friction: 0.15 + (stabilityScore / 5) * 0.35,
 					frictionAir: 0.001,
 					density: density,
