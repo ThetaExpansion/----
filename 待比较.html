@@ -1765,8 +1765,8 @@
 				const size = displaySize;
 				const center = { x: size / 2, y: size / 2 };
 				// 1. 扩大雷达绘图半径，向下占用更多空间，减少底部空白
-				const radius = size * 0.3; // 原0.3 → 0.38，雷达整体放大下移
-				const labelOuterScale = 1.45; // 原1.3 → 1.45，文字向外大幅延伸，底部文字不贴边
+				const radius = size * 0.32; // 原0.3 → 0.38，雷达整体放大下移
+				const labelOuterScale = 1.32; // 原1.3 → 1.45，文字向外大幅延伸，底部文字不贴边
 				ctx.clearRect(0, 0, size, size);
 				ctx.save();
 				ctx.translate(center.x, center.y);
