@@ -15,17 +15,8 @@
 			html,
 			body {
 				width: 100%;
-				/* 改用dvh优先适配移动端可视高度，兼容微信标题栏 */
-				min-height: 100dvh;
-				min-height: 100vh;
-				margin: 0;
-				padding: 0;
 				overflow-x: hidden;
-				/* 全局允许垂直滚动 */
-				overflow-y: auto;
-				-webkit-overflow-scrolling: touch;
 			}
-
 			:root {
 				--bg-color: #faf8f4;
 				--text-color: #2b2a27;
@@ -64,15 +55,15 @@
 				min-height: 100vh;
 				padding: 24px 16px 40px;
 				justify-content: center;
-			}
+			} 
 			/* //todo:改了这个 */
 			#page-battle {
 				display: none;
 				width: 100%;
-				/* 取消min-height限制，交给body全局滚动 */
-				padding: 14px 6px 60px; /* 底部加大padding，避免按钮被微信底部栏遮挡 */
-				/* 取消局部overflow，交给body全局滚动 */
-				overflow: visible;
+				min-height: 100vh;
+				overflow-y: auto;
+				overflow-x: hidden;
+				padding: 14px 6px 40px;
 				-webkit-overflow-scrolling: touch;
 			}
 			#battle-scale-outer {
@@ -81,7 +72,7 @@
 				justify-content: center;
 				overflow: visible;
 				padding: 0 10px 16px;
-				/* 删除 min-height:0，缩放不再限制高度 */
+				min-height: 0;
 			}
 			#battle-scale-inner {
 				display: flex;
@@ -91,10 +82,7 @@
 				flex-shrink: 0;
 				transform-origin: top center;
 				will-change: transform;
-				/* 核心修复：flex子元素允许收缩，解决滚动失效 */
-				min-height: 0;
 			}
-
 			.input-card {
 				background: white;
 				padding: clamp(24px, 6vw, 40px);
@@ -1572,13 +1560,13 @@
 				const naturalH = inner.offsetHeight;
 				if (naturalW === 0 || naturalH === 0) return;
 				const availW = window.innerWidth * 0.98;
-				// 删除高度限制，只做宽度缩放，不再限制高度导致内容截断
-				const scale = Math.min(1, availW / naturalW);
+				const availH = window.innerHeight * 0.98;
+				const scale = Math.min(1, availW / naturalW, availH / naturalH);
 				inner.style.transform = `scale(${scale})`;
 				inner.style.transformOrigin = "top center";
-				// 删除 outer.style.height 强制高度赋值，不再固定容器高度截断内容
+				outer.style.height = naturalH * scale + "px";
+				outer.style.minHeight = naturalH * scale + "px";
 			}
-
 			window.addEventListener("resize", fitBattleScale);
 			window.addEventListener("orientationchange", () =>
 				setTimeout(fitBattleScale, 100),
@@ -2095,31 +2083,27 @@
 				document.querySelector(".battle-controls").style.display = "none";
 				document.querySelector(".battle-header").classList.add("final-focus");
 
-				// 分别生成红方、蓝方每个字的HTML，按单局胜负单独控制高亮
-				let redCharHtml = "";
-				let blueCharHtml = "";
-				for (let i = 0; i < redName.length; i++) {
-					const charRed = redName[i];
-					const charBlue = blueName[i];
-					// 获取第i回合对战记录
-					const roundData = roundResults[i];
-					let redActiveClass = "";
-					let blueActiveClass = "";
-					if (roundData.winner === "red") {
-						// 本局红赢，仅红方单个字高亮
-						redActiveClass = "red-active";
-					} else if (roundData.winner === "blue") {
-						// 本局蓝赢，仅蓝方单个字高亮
-						blueActiveClass = "blue-active";
-					}
-					// 平局两个class都为空，无高亮
-					redCharHtml += `<span class="char-box ${redActiveClass}">${charRed}</span>`;
-					blueCharHtml += `<span class="char-box ${blueActiveClass}">${charBlue}</span>`;
-				}
+				// 修改后的代码：根据比分判断哪一方胜利，胜利方才加 active 类，平局则都不加（或都加）
+				const isRedWinner = score.red > score.blue;
+				const isBlueWinner = score.blue > score.red;
 
-				document.getElementById("result-roster-red").innerHTML = redCharHtml;
-				document.getElementById("result-roster-blue").innerHTML = blueCharHtml;
+				// 红方：只有红方最终胜出时，字才带 red-active 高亮类
+				document.getElementById("result-roster-red").innerHTML = redName
+					.split("")
+					.map(
+						(c) =>
+							`<span class="char-box ${isRedWinner ? "red-active" : ""}">${c}</span>`,
+					)
+					.join("");
 
+				// 蓝方：只有蓝方最终胜出时，字才带 blue-active 高亮类
+				document.getElementById("result-roster-blue").innerHTML = blueName
+					.split("")
+					.map(
+						(c) =>
+							`<span class="char-box ${isBlueWinner ? "blue-active" : ""}">${c}</span>`,
+					)
+					.join("");
 				document.getElementById("result-score-red").textContent = score.red;
 				document.getElementById("result-score-blue").textContent = score.blue;
 
@@ -2141,9 +2125,9 @@
 									? `蓝方「${r.blueChar}」打败红方「${r.redChar}」`
 									: `红方「${r.redChar}」与蓝方「${r.blueChar}」平局`;
 						return `<div class="result-item ${r.winner}">
-            <div class="result-main">第${i + 1}局：${winText}</div>
-            <div class="result-summary">评价：${r.summary}</div>
-        </div>`;
+						<div class="result-main">第${i + 1}局：${winText}</div>
+						<div class="result-summary">评价：${r.summary}</div>
+					</div>`;
 					})
 					.join("");
 				modal.classList.remove("preview-hidden");

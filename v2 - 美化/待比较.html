@@ -2095,31 +2095,27 @@
 				document.querySelector(".battle-controls").style.display = "none";
 				document.querySelector(".battle-header").classList.add("final-focus");
 
-				// 分别生成红方、蓝方每个字的HTML，按单局胜负单独控制高亮
-				let redCharHtml = "";
-				let blueCharHtml = "";
-				for (let i = 0; i < redName.length; i++) {
-					const charRed = redName[i];
-					const charBlue = blueName[i];
-					// 获取第i回合对战记录
-					const roundData = roundResults[i];
-					let redActiveClass = "";
-					let blueActiveClass = "";
-					if (roundData.winner === "red") {
-						// 本局红赢，仅红方单个字高亮
-						redActiveClass = "red-active";
-					} else if (roundData.winner === "blue") {
-						// 本局蓝赢，仅蓝方单个字高亮
-						blueActiveClass = "blue-active";
-					}
-					// 平局两个class都为空，无高亮
-					redCharHtml += `<span class="char-box ${redActiveClass}">${charRed}</span>`;
-					blueCharHtml += `<span class="char-box ${blueActiveClass}">${charBlue}</span>`;
-				}
+				// 修改后的代码：根据比分判断哪一方胜利，胜利方才加 active 类，平局则都不加（或都加）
+				const isRedWinner = score.red > score.blue;
+				const isBlueWinner = score.blue > score.red;
 
-				document.getElementById("result-roster-red").innerHTML = redCharHtml;
-				document.getElementById("result-roster-blue").innerHTML = blueCharHtml;
+				// 红方：只有红方最终胜出时，字才带 red-active 高亮类
+				document.getElementById("result-roster-red").innerHTML = redName
+					.split("")
+					.map(
+						(c) =>
+							`<span class="char-box ${isRedWinner ? "red-active" : ""}">${c}</span>`,
+					)
+					.join("");
 
+				// 蓝方：只有蓝方最终胜出时，字才带 blue-active 高亮类
+				document.getElementById("result-roster-blue").innerHTML = blueName
+					.split("")
+					.map(
+						(c) =>
+							`<span class="char-box ${isBlueWinner ? "blue-active" : ""}">${c}</span>`,
+					)
+					.join("");
 				document.getElementById("result-score-red").textContent = score.red;
 				document.getElementById("result-score-blue").textContent = score.blue;
 
@@ -2141,9 +2137,9 @@
 									? `蓝方「${r.blueChar}」打败红方「${r.redChar}」`
 									: `红方「${r.redChar}」与蓝方「${r.blueChar}」平局`;
 						return `<div class="result-item ${r.winner}">
-            <div class="result-main">第${i + 1}局：${winText}</div>
-            <div class="result-summary">评价：${r.summary}</div>
-        </div>`;
+						<div class="result-main">第${i + 1}局：${winText}</div>
+						<div class="result-summary">评价：${r.summary}</div>
+					</div>`;
 					})
 					.join("");
 				modal.classList.remove("preview-hidden");
