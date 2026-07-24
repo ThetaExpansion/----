@@ -281,7 +281,7 @@
 				display: flex;
 				flex-direction: column;
 				align-items: center;
-				gap: clamp(8px, 1.5vw, 14px);
+				gap: 1px;
 			}
 			.preview-card.red {
 				border-color: rgba(185, 72, 63, 0.35);
@@ -1764,33 +1764,45 @@
 				ctx.scale(dpr, dpr);
 				const size = displaySize;
 				const center = { x: size / 2, y: size / 2 };
-				const radius = size * 0.3;
+				// 1. 扩大雷达绘图半径，向下占用更多空间，减少底部空白
+				const radius = size * 0.3; // 原0.3 → 0.38，雷达整体放大下移
+				const labelOuterScale = 1.45; // 原1.3 → 1.45，文字向外大幅延伸，底部文字不贴边
 				ctx.clearRect(0, 0, size, size);
 				ctx.save();
 				ctx.translate(center.x, center.y);
-				ctx.font = "13px Arial";
+
+				// ====== 修复2：增大坐标轴文字字号、加粗 ======
+				ctx.font = "bold 20px Arial"; // 原13px → 18px，加bold加粗
 				ctx.textAlign = "center";
-				ctx.textBaseline = "middle";
+				ctx.textBaseline = "middle"; // 强制垂直居中，文字不会上下偏移
 				ctx.strokeStyle = "#d8d4ca";
 				ctx.lineWidth = 1;
+
+				// 绘制同心圆网格
 				for (let ring = 1; ring <= 4; ring++) {
 					ctx.beginPath();
 					ctx.arc(0, 0, (radius / 4) * ring, 0, 2 * Math.PI);
 					ctx.stroke();
 				}
+
 				const axisCount = scores.length;
 				for (let i = 0; i < axisCount; i++) {
 					const angle = Math.PI / 2 + (i * 2 * Math.PI) / axisCount;
 					const x = Math.cos(angle) * radius;
 					const y = -Math.sin(angle) * radius;
+					// 绘制轴线
 					ctx.beginPath();
 					ctx.moveTo(0, 0);
 					ctx.lineTo(x, y);
 					ctx.stroke();
+					// 文字坐标放大延伸距离，解决底部空白
+					const textX = Math.cos(angle) * radius * labelOuterScale;
+					const textY = -Math.sin(angle) * radius * labelOuterScale;
 					ctx.fillStyle = "#333";
-					ctx.font = "bold 20px Arial";
-					ctx.fillText(labels[i], x * 1.3, y * 1.3);
+					ctx.fillText(labels[i], textX, textY);
 				}
+
+				// 绘制多边形色块
 				ctx.beginPath();
 				scores.forEach((score, i) => {
 					const value = (score - 1) / 4;
@@ -1809,6 +1821,8 @@
 				ctx.lineWidth = 2;
 				ctx.fill();
 				ctx.stroke();
+
+				// 顶点圆点
 				scores.forEach((score, i) => {
 					const value = (score - 1) / 4;
 					const angle = Math.PI / 2 + (i * 2 * Math.PI) / axisCount;
