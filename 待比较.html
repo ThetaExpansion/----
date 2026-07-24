@@ -54,7 +54,7 @@
 				font-weight: normal;
 				letter-spacing: 2px;
 				font-size: clamp(1.5rem, 6vw, 2rem);
-				margin-bottom: 5px;
+				margin-bottom: 24px;
 			}
 			#page-input {
 				display: flex;
@@ -231,23 +231,27 @@
 				z-index: 10000;
 			}
 			.preview-window {
-				width: min(720px, 94vw);
-				max-height: min(90vh, 100%);
+				width: calc(100vw - 16px);
+				height: calc(100vh - 16px);
+				max-width: 1400px; /* 大屏电脑限制最大宽度，不会无限拉宽 */
+				max-height: calc(100vh - 16px);
 				overflow-y: auto;
 				background: white;
-				border-radius: 22px;
+				border-radius: 12px; /* 缩小圆角，贴合大屏观感 */
 				padding: clamp(16px, 3vw, 24px);
 				box-shadow: 0 24px 60px rgba(0, 0, 0, 0.24);
 				position: relative;
 				-webkit-overflow-scrolling: touch;
 			}
+
 			.preview-hidden {
 				display: none !important;
 			}
 			.preview-header {
-				font-size: clamp(1.1rem, 2.5vw, 1.4rem);
+				font-size: clamp(1.35rem, 2.5vw, 1.8rem);
 				font-weight: bold;
 				margin-bottom: clamp(12px, 2vw, 18px);
+				text-align: center;
 			}
 			.preview-close {
 				position: absolute;
@@ -296,7 +300,7 @@
 				display: flex;
 				align-items: center;
 				justify-content: center;
-				font-size: clamp(4rem, 6vw, 8rem);
+				font-size: clamp(2rem, 4vw, 4rem);
 				font-weight: bold;
 				color: inherit;
 			}
@@ -372,7 +376,7 @@
 				}
 				.font-preview {
 					min-height: 50px;
-					font-size: clamp(2.5rem, 12vw, 4rem);
+					font-size: clamp(2rem, 4vw, 4rem);
 				}
 				.preview-chart-wrapper canvas {
 					width: min(180px, 40vw);
@@ -772,7 +776,7 @@
 				-webkit-background-clip: text;
 				-webkit-text-fill-color: transparent;
 				background-clip: text;
-				padding-right: 50px;
+				text-align: center;
 			}
 			.preview-card {
 				background: linear-gradient(180deg, #faf7f1 0%, #f5f2ea 100%);
@@ -963,7 +967,7 @@
 				}
 				.font-preview {
 					min-height: 60px;
-					font-size: clamp(2.5rem, 8vw, 4rem);
+					font-size: clamp(2rem, 4vw, 4rem);
 				}
 				.preview-chart-wrapper canvas {
 					width: min(160px, 42vw);
@@ -1002,9 +1006,6 @@
 				}
 				#game-container {
 					width: min(360px, 94vw);
-				}
-				.preview-header {
-					font-size: 1.1rem;
 				}
 				.preview-title {
 					font-size: 1rem;
@@ -1226,11 +1227,11 @@
 				inset: 0;
 				align-items: center; /* 改为垂直居中 */
 				justify-content: center;
-				padding: 20px; /* 恢复常规 Padding */
+				padding: 5px; /* 恢复常规 Padding */
 				z-index: 10000;
 			}
 			#result-modal .preview-window {
-				max-height: 90vh; /* 允许最高占用 90% 屏幕高度 */
+				max-height: 95vh; /* 允许最高占用 90% 屏幕高度 */
 				width: min(720px, 94vw); /* 保持舒适的卡片宽度 */
 				overflow-y: auto; /* 内容超长时自适应滚动 */
 			}
@@ -1283,7 +1284,7 @@
 
 		<div id="page-input">
 			<div class="input-card">
-				<h1>誰的八字更硬測試器</h1>
+				<h1>谁的八字更硬测试器</h1>
 				<p style="color: #666; margin-bottom: 20px">
 					请输入纯汉字，汉字会依次变成陀螺对战，双方字数必须相等
 				</p>
@@ -1310,10 +1311,10 @@
 					<strong>⚔️ 游戏规则：小时候玩过的斗陀螺</strong>
 					<br />1.
 					<strong>碎裂机制</strong
-					>：猛烈撞击可能导致字体裂成大小不均的碎块——大概率甩出几个小碎渣，保留一块较大的"核心碎块"。<br />
+					>：猛烈撞击可能导致字体裂成大小不均的碎块，保留一块较大的「核心碎块」「核心碎块」。<br />
 					2.
 					<strong>胜负判定</strong
-					>：只看双方的「核心碎块」谁先完全停转（精确归零），先停者判负，与其余小碎块是否还在转无关。<br />
+					>：只看双方的「核心碎块」谁先完全停转，先停者判负，与其余小碎块是否还在转无关。<br />
 					3.
 					<strong>战斗策略</strong
 					>：不同字形的速度、转动惯量、质量、稳固性等等都不太一样，选择合适的字形可以影响战局。<br />
@@ -1362,7 +1363,7 @@
 						<div class="km-breathe">
 							<div class="km-float">
 								<div class="km-sway">
-									<div id="kaomoji-face" class="km-face">₍^ >ヮ<^₎</div>
+									<div id="kaomoji-face" class="km-face" (^>ヮ<^)</div>
 								</div>
 							</div>
 						</div>
@@ -1468,9 +1469,9 @@
 
 			// ==================== 颜文字状态机（纯新增） ====================
 			const KM_CFG = {
-				relaxed: { text: "₍^ >ヮ<^₎", color: "#c0c0c0", scale: 1 }, // 亮橙
-				tense: { text: "₍^oヮo^₎", color: "#5c194", scale: 1 }, // 正红
-				worried: { text: "( ⁰▿⁰)", color: "#c8d65", scale: 1 }, // 暗红
+				relaxed: { text: "(^>ヮ<^)", color: "#c0c0c0", scale: 1 }, // 亮橙
+				tense: { text: "(^oヮo^)", color: "#5c194", scale: 1 }, // 正红
+				worried: { text: "(⁰▿⁰)", color: "#c8d65", scale: 1 }, // 暗红
 				happy: { text: "ꉂꉂ(ˊᗜˋ)", color: "#37ad2", scale: 1 }, // 翠绿
 			};
 			let kmState = "relaxed";
@@ -2079,7 +2080,7 @@
 
 			function addRoundResult(redChar, blueChar, winner, duration, shattered) {
 				let summary =
-					duration <= 7500 ? "碾压级别" : shattered ? "破碎激烈" : "势均力敌";
+					duration <= 5500 ? "碾压级别" : shattered ? "碎了一地" : "势均力敌";
 				roundResults.push({
 					redChar,
 					blueChar,
@@ -2126,12 +2127,24 @@
 				const modal = document.getElementById("result-modal");
 				const title = document.getElementById("result-winner-title");
 				const list = document.getElementById("result-list");
-				title.textContent =
-					score.red > score.blue
-						? "红方最终胜利！"
-						: score.blue > score.red
-							? "蓝方最终胜利！"
-							: "最终结果：平局！";
+				if (score.red > score.blue) {
+					// 筛选出红方胜利的所有汉字
+					const winChars = redName
+						.split("")
+						.filter((_, idx) => roundResults[idx].winner === "red")
+						.join("");
+					title.textContent = `红方「${winChars}」的八字实在太硬了`;
+				} else if (score.blue > score.red) {
+					// 筛选出蓝方胜利的所有汉字
+					const winChars = blueName
+						.split("")
+						.filter((_, idx) => roundResults[idx].winner === "blue")
+						.join("");
+					title.textContent = `蓝方「${winChars}」八字实在是太硬了`;
+				} else {
+					title.textContent = "八字不分高下";
+				}
+
 				list.innerHTML = roundResults
 					.map((r, i) => {
 						const winText =
@@ -2142,7 +2155,7 @@
 									: `红方「${r.redChar}」与蓝方「${r.blueChar}」平局`;
 						return `<div class="result-item ${r.winner}">
             <div class="result-main">第${i + 1}局：${winText}</div>
-            <div class="result-summary">评价：${r.summary}</div>
+            <div class="result-summary">战况：${r.summary}</div>
         </div>`;
 					})
 					.join("");
